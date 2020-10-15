@@ -16,7 +16,7 @@ class IpoProfileSerializer
     object.price_low
   end
 
-  attributes :first_day_close_price, :current_price, :return,
+  attributes :first_day_close_price, :current_price, :rate_of_return,
   :exchange, :estimated_volume, :managers, :co_managers,
   :status, :expected_to_trade
 

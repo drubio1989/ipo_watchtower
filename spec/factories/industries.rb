@@ -1,5 +1,5 @@
 FactoryBot.define do
   factory :industry do
-    name { 'Health Care' }
+    name { Faker::IndustrySegments.industry }
   end
 end

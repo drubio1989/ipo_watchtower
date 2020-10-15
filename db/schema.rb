@@ -56,7 +56,7 @@ ActiveRecord::Schema.define(version: 2020_09_27_174641) do
     t.float "first_day_close_price"
     t.date "offer_date"
     t.float "current_price"
-    t.float "return"
+    t.float "rate_of_return"
     t.date "file_date"
     t.index ["company_id"], name: "index_ipo_profiles_on_company_id"
     t.index ["industry_id"], name: "index_ipo_profiles_on_industry_id"

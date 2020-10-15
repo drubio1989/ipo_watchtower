@@ -1,5 +1,6 @@
 module Api::V1
   class IpoProfilesController < ApplicationController
+    
     def last_100
       @ipos = IpoProfile.limit(100)
       serialize(@ipos)
@@ -16,8 +17,7 @@ module Api::V1
     end
 
     def ipo_calendar
-      #This might have to be filed_at not created_at
-      @ipos = IpoProfile.where(created_at: Date.new(2020,10,1)..Date.new(2020, 10, 31))
+      @ipos = IpoProfile.where(file_date: Date.new(2020,10,1)..Date.new(2020, 10, 31))
       serialize(@ipos)
     end
 

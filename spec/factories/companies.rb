@@ -1,10 +1,11 @@
 FactoryBot.define do
   factory :company do
+    random = Random.new
     name { Faker::Company.name }
-    description { 'A leading provider in some kind of industry. We build cool products' }
+    description { Faker::Company.bs  }
     industry { Faker::Company.industry }
-    employees { 100 }
-    founded { Date.today }
+    employees { random.rand(200) }
+    founded { Date.today - random.rand(365).days }
     address { Faker::Address.full_address }
     phone_number { Faker::PhoneNumber.phone_number }
     web_address { 'www.company.com' }
