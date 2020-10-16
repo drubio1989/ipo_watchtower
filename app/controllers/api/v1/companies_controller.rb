@@ -1,5 +1,12 @@
 module Api::V1
   class CompaniesController < ApplicationController
+    #include links in this for self
+    def index
+      options = {}
+      options[:fields] = company_fields
+      @companies = Company.name_starts_with_letter(params[:filter][:name])
+      serialize(@companies, options)
+    end
 
     def show
       options = {}
@@ -11,11 +18,15 @@ module Api::V1
 
     private
 
+    def company_fields
+      { company: [:name] }
+    end
+
     def ipo_profile_fields
       { ipo: [:company, :symbol, :industry, :shares, :exchange, :estimated_volume, :managers, :co_managers, :status, :expected_to_trade, :price_range] }
     end
 
-    def serialize(object, options)
+    def serialize(object, options = {})
       render json: CompanySerializer.new(object, options).serializable_hash.to_json, status: :ok
     end
   end
