@@ -1,6 +1,5 @@
 module Api::V1
   class IpoProfilesController < ApplicationController
-    #TODO: Does the pagination work?
     include JSONAPI::Pagination
 
     before_action :fetch_ipos
