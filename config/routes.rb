@@ -9,7 +9,7 @@ Rails.application.routes.draw do
       get 'ipo-index', to: 'companies#index'
 
       scope :ipo do
-        
+        resources :companies, only: [:show]
       end
     end
   end
