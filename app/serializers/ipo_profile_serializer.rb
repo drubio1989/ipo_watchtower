@@ -23,4 +23,11 @@ class IpoProfileSerializer
   attributes :price_range do |object|
     "#{object.price_low}" + "-" + "#{object.price_high}"
   end
+
+  belongs_to :company, links: {
+    related: -> (object) {
+      "#{ENV["DOMAIN_URL"]}/api/v1/ipo/companies/#{object.company.slug}"
+    }
+  }
+
 end

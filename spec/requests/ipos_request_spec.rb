@@ -1,5 +1,305 @@
 require 'rails_helper'
 
-RSpec.describe "Ipos", type: :request do
+RSpec.describe "IpoProfiles", type: :request do
+  let(:valid_keys) do
+    %w[id type attributes relationships]
+  end
 
+  def valid_attributes(ipo_profile)
+    {
+      "company"=>ipo_profile.company.name,
+      "symbol"=> ipo_profile.symbol,
+      "industry"=> ipo_profile.industry.name,
+      "offer_date"=>ipo_profile.offer_date.strftime("%Y-%m-%d"),
+      "shares"=>ipo_profile.shares,
+      "offer_price"=>ipo_profile.price_low,
+      "first_day_close_price"=>ipo_profile.first_day_close_price,
+      "current_price"=>ipo_profile.current_price,
+      "rate_of_return"=>ipo_profile.rate_of_return
+    }
+  end
+
+  def valid_relationships(company)
+    {
+      "company"=> {
+          "data"=> {
+            "id"=> "#{company.id}",
+            "type"=> "company"
+        },
+        "links"=> {
+          "related"=> "#{api_v1_company_path(company.slug)}"
+        }
+      }
+    }
+  end
+
+  def valid_recently_filed_attributes(ipo_profile)
+    {
+      "file_date"=> ipo_profile.file_date.strftime("%Y-%m-%d"),
+      "company"=> ipo_profile.company.name,
+      "symbol"=> ipo_profile.symbol,
+      "managers"=> ipo_profile.managers,
+      "shares"=> ipo_profile.shares,
+      "price_low"=> ipo_profile.price_low,
+      "price_high"=> ipo_profile.price_high,
+      "estimated_volume"=> ipo_profile.estimated_volume,
+      "expected_to_trade"=> ipo_profile.expected_to_trade.strftime("%Y-%m-%d")
+    }
+  end
+
+  def valid_calendar_attributes(ipo_profile)
+    {
+      "company"=>ipo_profile.company.name,
+      "symbol"=> ipo_profile.symbol,
+      "managers"=> ipo_profile.managers,
+      "shares"=>ipo_profile.shares,
+      "price_low"=>ipo_profile.price_low,
+      "price_high"=>ipo_profile.price_high,
+      "estimated_volume"=>ipo_profile.estimated_volume,
+      "expected_to_trade"=>ipo_profile.expected_to_trade.strftime("%Y-%m-%d")
+    }
+  end
+
+  let(:valid_pagination_linkage) do
+    {
+      "self"=> "#{ENV["TEST_DOMAIN_URL"]}#{request.fullpath}",
+      "current"=> "#{ENV["TEST_DOMAIN_URL"]}#{request.fullpath}?page[number]=1",
+      "next"=> "#{ENV["TEST_DOMAIN_URL"]}#{request.fullpath}?page[number]=2",
+      "last"=> "#{ENV["TEST_DOMAIN_URL"]}#{request.fullpath}?page[number]=3"
+    }
+  end
+
+  shared_examples_for 'requests_and_status_codes' do
+    it 'returns 200' do
+      subject
+      expect(response).to have_http_status(:ok)
+    end
+  end
+
+  describe 'GET #last-100' do
+    context 'status codes' do
+      subject { get api_v1_last_100_ipos_path }
+      it_behaves_like 'requests_and_status_codes'
+    end
+
+    describe 'json body structure' do
+      it 'has the correct json body structure' do
+        create(:ipo_profile)
+        get api_v1_last_100_ipos_path
+        payload = json_data[0]
+        ipo_profile = IpoProfile.find(payload["id"])
+        expect(payload.keys).to eq valid_keys
+        expect(payload["attributes"]).to include valid_attributes(ipo_profile)
+        expect(payload["relationships"]).to include valid_relationships(ipo_profile.company)
+      end
+    end
+
+    it 'returns the last 100 ipos ordered by offer_date' do
+      a = create(:ipo_profile, offer_date: Date.today - 7.days)
+      b = create(:ipo_profile, offer_date: Date.today - 3.days)
+      c = create(:ipo_profile, offer_date: Date.today - 1.days)
+
+      get api_v1_last_100_ipos_path
+      expect(assigns(:ipos)).to eq([a,b,c])
+    end
+
+    context 'pagination' do
+      before(:each) do
+        create_list(:ipo_profile, 90)
+      end
+
+      it 'paginates by collections of 30' do
+        get api_v1_last_100_ipos_path
+        expect(json_data.size).to eq 30
+      end
+
+      it 'has the correct top level pagination linkage' do
+        get api_v1_last_100_ipos_path
+        payload = json_pagination
+        expect(payload).to include valid_pagination_linkage
+      end
+    end
+  end
+
+  describe 'GET #last-12-months' do
+    context 'status codes' do
+      subject { get api_v1_last_12_months_path }
+      it_behaves_like 'requests_and_status_codes'
+    end
+
+    describe 'json body structure' do
+      it 'has the correct json body structure' do
+        create(:ipo_profile, :within_12_months)
+        get api_v1_last_12_months_path
+        payload = json_data[0]
+        ipo_profile = IpoProfile.find(payload["id"])
+        expect(payload.keys).to eq valid_keys
+        expect(payload["attributes"]).to include valid_attributes(ipo_profile)
+        expect(payload["relationships"]).to include valid_relationships(ipo_profile.company)
+      end
+    end
+
+    it 'returns ipos in the last 12 months ordered by offer_date' do
+      a = create(:ipo_profile, :within_12_months)
+      b = create(:ipo_profile, :within_12_months)
+      c = create(:ipo_profile, offer_date: (Date.today - 2.years))
+
+      get api_v1_last_12_months_path
+
+      expect(assigns(:ipos)).to include(a,b)
+      expect(assigns(:ipos)).to_not include([c])
+    end
+
+    context 'pagination' do
+      before(:each) do
+        create_list(:ipo_profile, 90, :within_12_months)
+      end
+
+      it 'paginates by collections of 30' do
+        get api_v1_last_12_months_path
+        expect(json_data.size).to eq 30
+      end
+
+      it 'has the correct top level pagination linkage' do
+        get api_v1_last_12_months_path
+        payload = json_pagination
+        expect(payload).to include valid_pagination_linkage
+      end
+    end
+  end
+
+  describe 'GET #current-year-pricings' do
+    context 'status codes' do
+      subject { get api_v1_current_year_pricings_path }
+      it_behaves_like 'requests_and_status_codes'
+    end
+
+    describe 'json body structure' do
+      it 'has the correct json body structure' do
+        create(:ipo_profile, :starting_from_beginning_of_year)
+        get api_v1_current_year_pricings_path
+        payload = json_data[0]
+        ipo_profile = IpoProfile.find(payload["id"])
+        expect(payload.keys).to eq valid_keys
+        expect(payload["attributes"]).to include valid_attributes(ipo_profile)
+        expect(payload["relationships"]).to include valid_relationships(ipo_profile.company)
+      end
+    end
+
+    it 'returns ipos from the beginning of the year to now' do
+      a = create(:ipo_profile, :starting_from_beginning_of_year)
+      b = create(:ipo_profile, offer_date: Date.today - 1.year)
+      get api_v1_current_year_pricings_path
+
+      expect(assigns(:ipos)).to include a
+      expect(assigns(:ipos)).to_not include([b])
+    end
+
+    context 'pagination' do
+      before(:each) do
+        create_list(:ipo_profile, 90, :starting_from_beginning_of_year)
+      end
+
+      it 'paginates by collections of 30' do
+        get api_v1_current_year_pricings_path
+        expect(json_data.size).to eq 30
+      end
+
+      it 'has the correct top level pagination linkage' do
+        get api_v1_current_year_pricings_path
+        payload = json_pagination
+        expect(payload).to include valid_pagination_linkage
+      end
+    end
+  end
+
+  describe 'GET #ipo-calendar' do
+    context 'status codes' do
+      subject { get api_v1_ipo_calendar_path }
+      it_behaves_like 'requests_and_status_codes'
+    end
+
+    describe 'json body structure' do
+      it 'has the correct json body structure' do
+        create(:ipo_profile)
+        get api_v1_ipo_calendar_path
+        payload = json_data[0]
+        ipo_profile = IpoProfile.find(payload["id"])
+        expect(payload.keys).to eq valid_keys
+        expect(payload["attributes"]).to include valid_calendar_attributes(ipo_profile)
+        expect(payload["relationships"]).to include valid_relationships(ipo_profile.company)
+      end
+    end
+
+    it 'returns ipos that will be trading after the start of the current week' do
+      a = create(:ipo_profile)
+      b = create(:ipo_profile, expected_to_trade: Date.today - 7.days)
+      get api_v1_ipo_calendar_path
+
+      expect(assigns(:ipos)).to include a
+      expect(assigns(:ipos)).to_not include([b])
+    end
+
+    context 'pagination' do
+      before(:each) do
+        create_list(:ipo_profile, 90)
+      end
+
+      it 'paginates by collections of 30' do
+        get api_v1_ipo_calendar_path
+        expect(json_data.size).to eq 30
+      end
+
+      it 'has the correct top level pagination linkage' do
+        get api_v1_ipo_calendar_path
+        payload = json_pagination
+        expect(payload).to include valid_pagination_linkage
+      end
+    end
+  end
+
+  describe 'GET #recently-filed' do
+    context 'status codes' do
+      subject { get api_v1_ipos_recently_filed_path }
+      it_behaves_like 'requests_and_status_codes'
+    end
+
+    describe 'json body structure' do
+      it 'has the correct json body structure' do
+        create(:ipo_profile, file_date: Date.today - 1.week)
+        get api_v1_ipos_recently_filed_path
+        payload = json_data[0]
+        ipo_profile = IpoProfile.find(payload["id"])
+        expect(payload.keys).to eq valid_keys
+        expect(payload["attributes"]).to include valid_recently_filed_attributes(ipo_profile)
+        expect(payload["relationships"]).to include valid_relationships(ipo_profile.company)
+      end
+    end
+
+    it 'returns ipos by recently filed' do
+      a = create(:ipo_profile, file_date: Date.today - 1.week)
+      b = create(:ipo_profile, file_date: Date.today - 7.months)
+      get api_v1_ipos_recently_filed_path
+
+      expect(assigns(:ipos)).to include a
+      expect(assigns(:ipos)).to_not include([b])
+    end
+
+    context 'pagination' do
+      before(:each) do
+        create_list(:ipo_profile, 90)
+      end
+
+      it 'paginates by collections of 30' do
+        get api_v1_ipos_recently_filed_path
+        expect(json_data.size).to eq 30
+      end
+
+      it 'has the correct top level pagination linkage' do
+        get api_v1_ipos_recently_filed_path
+        payload = json_pagination
+        expect(payload).to include valid_pagination_linkage
+      end
+    end
+  end
 end

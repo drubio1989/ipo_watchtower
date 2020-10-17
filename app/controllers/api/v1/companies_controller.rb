@@ -1,7 +1,5 @@
 module Api::V1
   class CompaniesController < ApplicationController
-    #include links in this for self
-
     def index
       options = {}
       options[:fields] = company_fields
@@ -24,7 +22,11 @@ module Api::V1
     end
 
     def ipo_profile_fields
-      { ipo: [:company, :symbol, :industry, :shares, :exchange, :estimated_volume, :managers, :co_managers, :status, :expected_to_trade, :price_range] }
+      {
+        ipo: [:company, :symbol, :industry, :shares, :exchange,
+        :estimated_volume, :managers, :co_managers, :status,
+        :expected_to_trade, :price_range]
+      }
     end
 
     def filter_params

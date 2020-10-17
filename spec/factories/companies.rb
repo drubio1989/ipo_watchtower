@@ -13,5 +13,10 @@ FactoryBot.define do
     market_cap { 4806.5}
     revenue { 2378.2 }
     net_income { 38.3 }
+    slug { }
+
+    after :create do |company|
+      company.slug = company.name.downcase.gsub(' ','-').gsub(',','')      
+    end
   end
 end

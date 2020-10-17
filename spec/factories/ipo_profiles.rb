@@ -10,15 +10,23 @@ FactoryBot.define do
     estimated_volume { random.rand(500).to_f }
     managers { 'Bank of America Merril Lynch/ J.P. Morgan/ Morgan Stanley' }
     co_managers { 'Blackstone Capital Markets/ CIBC World Markets' }
-    expected_to_trade { Date.today + 30.days }
+    expected_to_trade { (Date.today.beginning_of_week..Date.today + 2.weeks).to_a.sample }
     status { 'Priced' }
-    file_date { Date.today - 14.days }
-    offer_date { Date.today + 7.days }
+    file_date { (Date.today - 14.days) }
+    offer_date { (Date.today + 7.days) }
     first_day_close_price { (20..60).to_a.sample.to_f }
     current_price { (20..60).to_a.sample.to_f }
     rate_of_return { ((current_price - first_day_close_price) / first_day_close_price).ceil(2) }
 
     company
     industry
+
+    trait :within_12_months do
+      offer_date { (Date.today.last_year..Date.today).to_a.sample }
+    end
+
+    trait :starting_from_beginning_of_year do
+      offer_date { (Date.today.beginning_of_year..Date.today).to_a.sample }
+    end
   end
 end
