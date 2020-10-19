@@ -14,4 +14,8 @@ module JsonApiHelper
   def json_pagination
     json["links"]
   end
+
+  def json_error
+    json["errors"]
+  end
 end

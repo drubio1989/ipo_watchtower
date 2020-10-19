@@ -4,6 +4,14 @@ RSpec.describe "Companies", type: :request do
   let(:ipo_profile) { create(:ipo_profile) }
   let(:company) { ipo_profile.company}
 
+  def valid_error(id)
+    {
+      "status"=> "404",
+      "title"=> "Record Not Found",
+      "detail"=> "Couldn't find Company with 'id'=#{id}"
+    }
+  end
+
   let(:valid_attributes) do
     {
       "name"=> company.name,
@@ -98,6 +106,18 @@ RSpec.describe "Companies", type: :request do
     context 'status codes' do
       subject { get api_v1_company_path(company.id) }
       it_behaves_like 'requests_and_status_codes'
+    end
+
+    context 'errors' do
+      it 'returns 404 and error object if record is not found' do
+        get api_v1_company_path(1)
+        expect(response).to have_http_status(:not_found)
+      end
+
+      it 'has the proper error json body structure' do
+        get api_v1_company_path(1)
+        expect(json_error[0]).to include valid_error(1)
+      end
     end
 
     it 'has the correct json body structure' do

@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  get 'error/bad_route'
   namespace :api do
     namespace :v1 do
       get 'ipos-recently-filed', to: 'ipo_profiles#recently_filed'
@@ -11,6 +12,8 @@ Rails.application.routes.draw do
       scope :ipo do
         resources :companies, only: [:show]
       end
+
+      match '*path', to: 'errors#bad_request', via: :all
     end
   end
 end

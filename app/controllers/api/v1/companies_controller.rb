@@ -1,5 +1,7 @@
 module Api::V1
   class CompaniesController < ApplicationController
+    rescue_from ActiveRecord::RecordNotFound, with: :not_found
+    
     def index
       options = {}
       options[:fields] = company_fields
@@ -16,6 +18,17 @@ module Api::V1
     end
 
     private
+
+    def not_found(exception)
+      render json: {
+        errors: [
+          "status"=> "404",
+          "title"=>"Record Not Found",
+          "detail"=> exception.message
+        ]
+      },
+      status: :not_found
+    end
 
     def company_fields
       { company: [:name] }
