@@ -1,8 +1,12 @@
 require 'rails_helper'
 
 RSpec.describe "Companies", type: :request do
+  let(:api_key) { create(:api_key) }
   let(:ipo_profile) { create(:ipo_profile) }
   let(:company) { ipo_profile.company}
+  let(:headers) do
+    { 'HTTP_AUTHORIZATION' => "Token token=#{api_key.access_token}" }
+  end
 
   def valid_error(id)
     {
@@ -64,6 +68,13 @@ RSpec.describe "Companies", type: :request do
     }
   end
 
+  shared_examples_for 'unauthorized' do
+    it 'returns 401' do
+      subject
+      expect(response).to have_http_status(:unauthorized)
+    end
+  end
+
   shared_examples_for 'requests_and_status_codes' do
     it 'returns 200' do
       subject
@@ -78,13 +89,18 @@ RSpec.describe "Companies", type: :request do
 
   describe 'GET #ipo-index' do
     context 'status codes' do
-      subject { get api_v1_ipo_index_path }
+      subject { get api_v1_ipo_index_path, headers: headers }
       it_behaves_like 'requests_and_status_codes'
+    end
+
+    context 'unauthorized' do
+      subject { get api_v1_ipo_index_path }
+      it_behaves_like 'unauthorized'
     end
 
     it 'has the correct json body structure' do
       create(:company, name: 'Alpha Inc.')
-      get api_v1_ipo_index_path
+      get api_v1_ipo_index_path, headers: headers
       payload = json_data[0]
       expect(payload.keys).to eq valid_keys
       expect(payload["attributes"]).to include "name"=>"Alpha Inc."
@@ -96,7 +112,7 @@ RSpec.describe "Companies", type: :request do
         a = create(:company, name: 'ACME Inc.')
         b = create(:company, name: 'Beta Corp')
 
-        get api_v1_ipo_index_path, params: { filter: {name: 'B'} }
+        get api_v1_ipo_index_path, headers: headers, params: { filter: {name: 'B'} }
         payload = json_data[0]
 
         expect(payload).to_not include [a]
@@ -109,24 +125,29 @@ RSpec.describe "Companies", type: :request do
 
   describe 'GET #show' do
     context 'status codes' do
-      subject { get api_v1_company_path(company.id) }
+      subject { get api_v1_company_path(company.id), headers: headers }
       it_behaves_like 'requests_and_status_codes'
+    end
+
+    context 'unauthorized' do
+      subject { get api_v1_ipo_index_path }
+      it_behaves_like 'unauthorized'
     end
 
     context 'errors' do
       it 'returns 404 and error object if record is not found' do
-        get api_v1_company_path(1)
+        get api_v1_company_path(1), headers: headers
         expect(response).to have_http_status(:not_found)
       end
 
       it 'has the proper error json body structure' do
-        get api_v1_company_path(1)
+        get api_v1_company_path(1), headers: headers
         expect(json_error[0]).to include valid_error(1)
       end
     end
 
     it 'has the correct json body structure' do
-      get api_v1_company_path(company.id)
+      get api_v1_company_path(company.id), headers: headers
       payload = json_data
       included = json_included[0]
 
@@ -137,5 +158,4 @@ RSpec.describe "Companies", type: :request do
       expect(included).to include valid_included_attributes
     end
   end
-
 end

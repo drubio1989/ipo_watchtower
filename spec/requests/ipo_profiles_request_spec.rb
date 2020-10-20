@@ -1,6 +1,11 @@
 require 'rails_helper'
 
-RSpec.describe "IpoProfiles", type: :request do
+RSpec.describe "IpoProfilesController", type: :request do
+  let(:api_key) { create(:api_key) }
+  let(:headers) do
+    { 'HTTP_AUTHORIZATION' => "Token token=#{api_key.access_token}" }
+  end
+
   let(:valid_keys) do
     %w[id type attributes relationships]
   end
@@ -69,6 +74,13 @@ RSpec.describe "IpoProfiles", type: :request do
     }
   end
 
+  shared_examples_for 'unauthorized' do
+    it 'returns 401' do
+      subject
+      expect(response).to have_http_status(:unauthorized)
+    end
+  end
+
   shared_examples_for 'requests_and_status_codes' do
     it 'returns 200' do
       subject
@@ -83,14 +95,19 @@ RSpec.describe "IpoProfiles", type: :request do
 
   describe 'GET #last-100' do
     context 'status codes' do
-      subject { get api_v1_last_100_ipos_path }
+      subject { get api_v1_last_100_ipos_path, headers: headers }
       it_behaves_like 'requests_and_status_codes'
+    end
+
+    context 'unauthorized' do
+      subject { get api_v1_ipo_index_path }
+      it_behaves_like 'unauthorized'
     end
 
     describe 'json body structure' do
       it 'has the correct json body structure' do
         create(:ipo_profile)
-        get api_v1_last_100_ipos_path
+        get api_v1_last_100_ipos_path, headers: headers
         payload = json_data[0]
         ipo_profile = IpoProfile.find(payload["id"])
         expect(payload.keys).to eq valid_keys
@@ -104,7 +121,7 @@ RSpec.describe "IpoProfiles", type: :request do
       b = create(:ipo_profile, offer_date: Date.today - 3.days)
       c = create(:ipo_profile, offer_date: Date.today - 1.days)
 
-      get api_v1_last_100_ipos_path
+      get api_v1_last_100_ipos_path, headers: headers
       expect(assigns(:ipos)).to eq([a,b,c])
     end
 
@@ -114,12 +131,12 @@ RSpec.describe "IpoProfiles", type: :request do
       end
 
       it 'paginates by collections of 30' do
-        get api_v1_last_100_ipos_path
+        get api_v1_last_100_ipos_path, headers: headers
         expect(json_data.size).to eq 30
       end
 
       it 'has the correct top level pagination linkage' do
-        get api_v1_last_100_ipos_path
+        get api_v1_last_100_ipos_path, headers: headers
         payload = json_pagination
         expect(payload).to include valid_pagination_linkage
       end
@@ -128,14 +145,19 @@ RSpec.describe "IpoProfiles", type: :request do
 
   describe 'GET #last-12-months' do
     context 'status codes' do
-      subject { get api_v1_last_12_months_path }
+      subject { get api_v1_last_12_months_path, headers: headers }
       it_behaves_like 'requests_and_status_codes'
+    end
+
+    context 'unauthorized' do
+      subject { get api_v1_ipo_index_path }
+      it_behaves_like 'unauthorized'
     end
 
     describe 'json body structure' do
       it 'has the correct json body structure' do
         create(:ipo_profile, :within_12_months)
-        get api_v1_last_12_months_path
+        get api_v1_last_12_months_path, headers: headers
         payload = json_data[0]
         ipo_profile = IpoProfile.find(payload["id"])
         expect(payload.keys).to eq valid_keys
@@ -149,7 +171,7 @@ RSpec.describe "IpoProfiles", type: :request do
       b = create(:ipo_profile, :within_12_months)
       c = create(:ipo_profile, offer_date: (Date.today - 2.years))
 
-      get api_v1_last_12_months_path
+      get api_v1_last_12_months_path, headers: headers
 
       expect(assigns(:ipos)).to include(a,b)
       expect(assigns(:ipos)).to_not include([c])
@@ -161,12 +183,12 @@ RSpec.describe "IpoProfiles", type: :request do
       end
 
       it 'paginates by collections of 30' do
-        get api_v1_last_12_months_path
+        get api_v1_last_12_months_path, headers: headers
         expect(json_data.size).to eq 30
       end
 
       it 'has the correct top level pagination linkage' do
-        get api_v1_last_12_months_path
+        get api_v1_last_12_months_path, headers: headers
         payload = json_pagination
         expect(payload).to include valid_pagination_linkage
       end
@@ -175,14 +197,19 @@ RSpec.describe "IpoProfiles", type: :request do
 
   describe 'GET #current-year-pricings' do
     context 'status codes' do
-      subject { get api_v1_current_year_pricings_path }
+      subject { get api_v1_current_year_pricings_path, headers: headers }
       it_behaves_like 'requests_and_status_codes'
+    end
+
+    context 'unauthorized' do
+      subject { get api_v1_ipo_index_path }
+      it_behaves_like 'unauthorized'
     end
 
     describe 'json body structure' do
       it 'has the correct json body structure' do
         create(:ipo_profile, :starting_from_beginning_of_year)
-        get api_v1_current_year_pricings_path
+        get api_v1_current_year_pricings_path, headers: headers
         payload = json_data[0]
         ipo_profile = IpoProfile.find(payload["id"])
         expect(payload.keys).to eq valid_keys
@@ -194,7 +221,7 @@ RSpec.describe "IpoProfiles", type: :request do
     it 'returns ipos from the beginning of the year to now' do
       a = create(:ipo_profile, :starting_from_beginning_of_year)
       b = create(:ipo_profile, offer_date: Date.today - 1.year)
-      get api_v1_current_year_pricings_path
+      get api_v1_current_year_pricings_path, headers: headers
 
       expect(assigns(:ipos)).to include a
       expect(assigns(:ipos)).to_not include([b])
@@ -206,12 +233,12 @@ RSpec.describe "IpoProfiles", type: :request do
       end
 
       it 'paginates by collections of 30' do
-        get api_v1_current_year_pricings_path
+        get api_v1_current_year_pricings_path, headers: headers
         expect(json_data.size).to eq 30
       end
 
       it 'has the correct top level pagination linkage' do
-        get api_v1_current_year_pricings_path
+        get api_v1_current_year_pricings_path, headers: headers
         payload = json_pagination
         expect(payload).to include valid_pagination_linkage
       end
@@ -220,14 +247,19 @@ RSpec.describe "IpoProfiles", type: :request do
 
   describe 'GET #ipo-calendar' do
     context 'status codes' do
-      subject { get api_v1_ipo_calendar_path }
+      subject { get api_v1_ipo_calendar_path, headers: headers }
       it_behaves_like 'requests_and_status_codes'
+    end
+
+    context 'unauthorized' do
+      subject { get api_v1_ipo_index_path }
+      it_behaves_like 'unauthorized'
     end
 
     describe 'json body structure' do
       it 'has the correct json body structure' do
         create(:ipo_profile)
-        get api_v1_ipo_calendar_path
+        get api_v1_ipo_calendar_path, headers: headers
         payload = json_data[0]
         ipo_profile = IpoProfile.find(payload["id"])
         expect(payload.keys).to eq valid_keys
@@ -239,7 +271,7 @@ RSpec.describe "IpoProfiles", type: :request do
     it 'returns ipos that will be trading after the start of the current week' do
       a = create(:ipo_profile)
       b = create(:ipo_profile, expected_to_trade: Date.today - 7.days)
-      get api_v1_ipo_calendar_path
+      get api_v1_ipo_calendar_path, headers: headers
 
       expect(assigns(:ipos)).to include a
       expect(assigns(:ipos)).to_not include([b])
@@ -251,12 +283,12 @@ RSpec.describe "IpoProfiles", type: :request do
       end
 
       it 'paginates by collections of 30' do
-        get api_v1_ipo_calendar_path
+        get api_v1_ipo_calendar_path, headers: headers
         expect(json_data.size).to eq 30
       end
 
       it 'has the correct top level pagination linkage' do
-        get api_v1_ipo_calendar_path
+        get api_v1_ipo_calendar_path, headers: headers
         payload = json_pagination
         expect(payload).to include valid_pagination_linkage
       end
@@ -265,14 +297,19 @@ RSpec.describe "IpoProfiles", type: :request do
 
   describe 'GET #recently-filed' do
     context 'status codes' do
-      subject { get api_v1_ipos_recently_filed_path }
+      subject { get api_v1_ipos_recently_filed_path, headers: headers }
       it_behaves_like 'requests_and_status_codes'
+    end
+
+    context 'unauthorized' do
+      subject { get api_v1_ipo_index_path }
+      it_behaves_like 'unauthorized'
     end
 
     describe 'json body structure' do
       it 'has the correct json body structure' do
         create(:ipo_profile, file_date: Date.today - 1.week)
-        get api_v1_ipos_recently_filed_path
+        get api_v1_ipos_recently_filed_path, headers: headers
         payload = json_data[0]
         ipo_profile = IpoProfile.find(payload["id"])
         expect(payload.keys).to eq valid_keys
@@ -284,7 +321,7 @@ RSpec.describe "IpoProfiles", type: :request do
     it 'returns ipos by recently filed' do
       a = create(:ipo_profile, file_date: Date.today - 1.week)
       b = create(:ipo_profile, file_date: Date.today - 7.months)
-      get api_v1_ipos_recently_filed_path
+      get api_v1_ipos_recently_filed_path, headers: headers
 
       expect(assigns(:ipos)).to include a
       expect(assigns(:ipos)).to_not include([b])
@@ -296,12 +333,12 @@ RSpec.describe "IpoProfiles", type: :request do
       end
 
       it 'paginates by collections of 30' do
-        get api_v1_ipos_recently_filed_path
+        get api_v1_ipos_recently_filed_path, headers: headers
         expect(json_data.size).to eq 30
       end
 
       it 'has the correct top level pagination linkage' do
-        get api_v1_ipos_recently_filed_path
+        get api_v1_ipos_recently_filed_path, headers: headers
         payload = json_pagination
         expect(payload).to include valid_pagination_linkage
       end

@@ -16,10 +16,12 @@ Rails.application.routes.draw do
           resources :companies, only: [:show], constraints: -> request { request.format == :json }
         end
       end
-      
+
       defaults format: :json do
         match '*path', to: 'errors#unsupported_request', via: :all
       end
     end
   end
 end
+
+#Todo: specific industries
