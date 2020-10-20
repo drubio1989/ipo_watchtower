@@ -69,6 +69,11 @@ RSpec.describe "Companies", type: :request do
       subject
       expect(response).to have_http_status(:ok)
     end
+
+    it 'returns json content type' do
+      subject
+      expect(response.content_type).to eq("application/json; charset=utf-8")
+    end
   end
 
   describe 'GET #ipo-index' do

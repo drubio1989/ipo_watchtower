@@ -74,6 +74,11 @@ RSpec.describe "IpoProfiles", type: :request do
       subject
       expect(response).to have_http_status(:ok)
     end
+
+    it 'returns json content type' do
+      subject
+      expect(response.content_type).to eq("application/vnd.api+json; charset=utf-8")
+    end
   end
 
   describe 'GET #last-100' do
