@@ -2,6 +2,12 @@ require 'rails_helper'
 
 RSpec.describe "IpoProfilesController", type: :request do
   let(:api_key) { create(:api_key) }
+  let(:disabled_key) { create(:api_key, :disabled) }
+
+  let(:invalid_headers) do
+    { 'HTTP_AUTHORIZATION' => "Token token=#{disabled_key.access_token}" }
+  end
+
   let(:headers) do
     { 'HTTP_AUTHORIZATION' => "Token token=#{api_key.access_token}" }
   end
@@ -74,13 +80,6 @@ RSpec.describe "IpoProfilesController", type: :request do
     }
   end
 
-  shared_examples_for 'unauthorized' do
-    it 'returns 401' do
-      subject
-      expect(response).to have_http_status(:unauthorized)
-    end
-  end
-
   shared_examples_for 'requests_and_status_codes' do
     it 'returns 200' do
       subject
@@ -100,8 +99,19 @@ RSpec.describe "IpoProfilesController", type: :request do
     end
 
     context 'unauthorized' do
-      subject { get api_v1_ipo_index_path }
-      it_behaves_like 'unauthorized'
+      context 'with missing api key' do
+        it 'returns 401' do
+          get api_v1_last_100_ipos_path
+          expect(response).to have_http_status(:unauthorized)
+        end
+      end
+
+      context 'with a disabled key' do
+        it 'returns 401' do
+          get api_v1_last_100_ipos_path, headers: invalid_headers
+          expect(response).to have_http_status(:unauthorized)
+        end
+      end
     end
 
     describe 'json body structure' do
@@ -150,8 +160,19 @@ RSpec.describe "IpoProfilesController", type: :request do
     end
 
     context 'unauthorized' do
-      subject { get api_v1_ipo_index_path }
-      it_behaves_like 'unauthorized'
+      context 'with missing api key' do
+        it 'returns 401' do
+          get api_v1_last_12_months_path
+          expect(response).to have_http_status(:unauthorized)
+        end
+      end
+
+      context 'with a disabled key' do
+        it 'returns 401' do
+          get api_v1_last_12_months_path, headers: invalid_headers
+          expect(response).to have_http_status(:unauthorized)
+        end
+      end
     end
 
     describe 'json body structure' do
@@ -202,8 +223,19 @@ RSpec.describe "IpoProfilesController", type: :request do
     end
 
     context 'unauthorized' do
-      subject { get api_v1_ipo_index_path }
-      it_behaves_like 'unauthorized'
+      context 'with missing api key' do
+        it 'returns 401' do
+          get api_v1_current_year_pricings_path
+          expect(response).to have_http_status(:unauthorized)
+        end
+      end
+
+      context 'with a disabled key' do
+        it 'returns 401' do
+          get api_v1_current_year_pricings_path, headers: invalid_headers
+          expect(response).to have_http_status(:unauthorized)
+        end
+      end
     end
 
     describe 'json body structure' do
@@ -252,8 +284,19 @@ RSpec.describe "IpoProfilesController", type: :request do
     end
 
     context 'unauthorized' do
-      subject { get api_v1_ipo_index_path }
-      it_behaves_like 'unauthorized'
+      context 'with missing api key' do
+        it 'returns 401' do
+          get api_v1_ipo_calendar_path
+          expect(response).to have_http_status(:unauthorized)
+        end
+      end
+
+      context 'with a disabled key' do
+        it 'returns 401' do
+          get api_v1_ipo_calendar_path, headers: invalid_headers
+          expect(response).to have_http_status(:unauthorized)
+        end
+      end
     end
 
     describe 'json body structure' do
@@ -302,8 +345,19 @@ RSpec.describe "IpoProfilesController", type: :request do
     end
 
     context 'unauthorized' do
-      subject { get api_v1_ipo_index_path }
-      it_behaves_like 'unauthorized'
+      context 'with missing api key' do
+        it 'returns 401' do
+          get api_v1_ipos_recently_filed_path
+          expect(response).to have_http_status(:unauthorized)
+        end
+      end
+
+      context 'with a disabled key' do
+        it 'returns 401' do
+          get api_v1_ipos_recently_filed_path, headers: invalid_headers
+          expect(response).to have_http_status(:unauthorized)
+        end
+      end
     end
 
     describe 'json body structure' do

@@ -17,11 +17,11 @@ class ApplicationController < ActionController::API
   def authenticate_request
     authenticate_or_request_with_http_token do |token, options|
       api_key = ApiKey.find_by(access_token: token)
-      secret_key = ApiKey.find(api_key.id).secret_key
-      api_key.present? && (api_key.active != false) && secure_compare_with_hashing(api_key.secret_key, secret_key)
+      api_key.present? && (api_key.active != false)
     end
   end
 
+  # ToDo: Reimplment this once I understand how to properly mitigate timing attacks
   def secure_compare_with_hashing(key1, key2)
     ActiveSupport::SecurityUtils.secure_compare(key1, key2)
   end

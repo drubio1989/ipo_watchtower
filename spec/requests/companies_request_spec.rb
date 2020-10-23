@@ -2,8 +2,14 @@ require 'rails_helper'
 
 RSpec.describe "Companies", type: :request do
   let(:api_key) { create(:api_key) }
+  let(:disabled_key) { create(:api_key, :disabled) }
   let(:ipo_profile) { create(:ipo_profile) }
   let(:company) { ipo_profile.company}
+
+  let(:invalid_headers) do
+    { 'HTTP_AUTHORIZATION' => "Token token=#{disabled_key.access_token}" }
+  end
+
   let(:headers) do
     { 'HTTP_AUTHORIZATION' => "Token token=#{api_key.access_token}" }
   end
@@ -68,13 +74,6 @@ RSpec.describe "Companies", type: :request do
     }
   end
 
-  shared_examples_for 'unauthorized' do
-    it 'returns 401' do
-      subject
-      expect(response).to have_http_status(:unauthorized)
-    end
-  end
-
   shared_examples_for 'requests_and_status_codes' do
     it 'returns 200' do
       subject
@@ -94,8 +93,19 @@ RSpec.describe "Companies", type: :request do
     end
 
     context 'unauthorized' do
-      subject { get api_v1_ipo_index_path }
-      it_behaves_like 'unauthorized'
+      context 'with missing api key' do
+        it 'returns 401' do
+          get api_v1_ipo_index_path
+          expect(response).to have_http_status(:unauthorized)
+        end
+      end
+
+      context 'with a disabled key' do
+        it 'returns 401' do
+          get api_v1_ipo_index_path, headers: invalid_headers
+          expect(response).to have_http_status(:unauthorized)
+        end
+      end
     end
 
     it 'has the correct json body structure' do
@@ -130,8 +140,19 @@ RSpec.describe "Companies", type: :request do
     end
 
     context 'unauthorized' do
-      subject { get api_v1_ipo_index_path }
-      it_behaves_like 'unauthorized'
+      context 'with missing api key' do
+        it 'returns 401' do
+          get api_v1_company_path(company.id)
+          expect(response).to have_http_status(:unauthorized)
+        end
+      end
+
+      context 'with a disabled key' do
+        it 'returns 401' do
+          get api_v1_company_path(company.id), headers: invalid_headers
+          expect(response).to have_http_status(:unauthorized)
+        end
+      end
     end
 
     context 'errors' do
