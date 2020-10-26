@@ -17,7 +17,7 @@ module Api::V1
     end
 
     def current_year_pricings
-      jsonapi_paginate(@ipos.where("DATE(offer_date) >= ?", Date.today.beginning_of_year).order(created_at: :desc)) do |ipos|
+      jsonapi_paginate(@ipos.where("DATE(offer_date) >= ?", Date.today.beginning_of_year).order(offer_date: :desc)) do |ipos|
         serialize(ipos, listing_fields)
       end
     end
@@ -31,7 +31,7 @@ module Api::V1
     #TODO: I need to tease the functinonality out on what it means to begin
     # 'recently filed' and not trading on an exchange.
     def recently_filed
-      jsonapi_paginate(@ipos.where("DATE(file_date) >= ?", Date.today - 6.months).order(created_at: :desc)) do |ipos|
+      jsonapi_paginate(@ipos.where("DATE(file_date) >= ?", Date.today - 6.months).order(file_date: :desc)) do |ipos|
         serialize(ipos, recently_filed_fields)
       end
     end
