@@ -23,7 +23,7 @@ module Api::V1
     end
 
     def ipo_calendar
-      jsonapi_paginate(@ipos.where("DATE(expected_to_trade) >= ?", Date.today.beginning_of_week)) do |ipos|
+      jsonapi_paginate(@ipos.where("DATE(expected_to_trade) >= ?", Date.today.beginning_of_week).order(expected_to_trade: :desc)) do |ipos|
         serialize(ipos, calendar_info_fields)
       end
     end
