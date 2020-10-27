@@ -3,9 +3,28 @@ class ApplicationController < ActionController::API
   include ActionController::HttpAuthentication::Token::ControllerMethods
 
   before_action :authenticate_request
+  before_action :validate_accept_header
+  before_action :set_headers
 
   private
 
+  def validate_accept_header
+    if request.headers["Accept"] != 'application/vnd.api+json'
+      render json: { errors:
+        [
+          "status"=>"406",
+          "title"=>"Not Acceptable",
+          "detail"=>"#{request.format} is not supported.",
+        ]
+      },
+      status: :not_acceptable
+    end
+  end
+
+  def set_headers
+    response.headers['Content-Type'] = 'application/vnd.api+json'
+  end
+  
   # https://ropesec.com/articles/timing-attacks/
   # https://thoughtbot.com/blog/token-authentication-with-rails
   # https://stackoverflow.com/questions/17712359/authenticate-or-request-with-http-token-returning-html-instead-of-json

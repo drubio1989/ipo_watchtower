@@ -10,8 +10,18 @@ RSpec.describe "Companies", type: :request do
     { 'HTTP_AUTHORIZATION' => "Token token=#{disabled_key.access_token}" }
   end
 
+  let(:invalid_media_type) do
+    {
+      'HTTP_AUTHORIZATION' => "Token token=#{api_key.access_token}",
+      'Accept' => "text/html"
+    }
+  end
+
   let(:headers) do
-    { 'HTTP_AUTHORIZATION' => "Token token=#{api_key.access_token}" }
+    {
+      'HTTP_AUTHORIZATION' => "Token token=#{api_key.access_token}",
+      'Accept' => "application/vnd.api+json"
+    }
   end
 
   def valid_error(id)
@@ -82,7 +92,7 @@ RSpec.describe "Companies", type: :request do
 
     it 'returns json content type' do
       subject
-      expect(response.content_type).to eq("application/json; charset=utf-8")
+      expect(response.content_type).to eq("application/vnd.api+json")
     end
   end
 
@@ -105,6 +115,13 @@ RSpec.describe "Companies", type: :request do
           get api_v1_ipo_index_path, headers: invalid_headers
           expect(response).to have_http_status(:unauthorized)
         end
+      end
+    end
+
+    context 'bad media type' do
+      it 'returns 406 if media type is not application/vnd.api+json' do
+        get "/api/v1/last-100-ipos", headers: invalid_media_type
+        expect(response).to have_http_status(:not_acceptable)
       end
     end
 
@@ -152,6 +169,13 @@ RSpec.describe "Companies", type: :request do
           get api_v1_company_path(company.id), headers: invalid_headers
           expect(response).to have_http_status(:unauthorized)
         end
+      end
+    end
+
+    context 'bad media type' do
+      it 'returns 406 if media type is not application/vnd.api+json' do
+        get api_v1_company_path(company.id), headers: invalid_media_type
+        expect(response).to have_http_status(:not_acceptable)
       end
     end
 

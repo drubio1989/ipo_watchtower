@@ -8,8 +8,18 @@ RSpec.describe "IpoProfilesController", type: :request do
     { 'HTTP_AUTHORIZATION' => "Token token=#{disabled_key.access_token}" }
   end
 
+  let(:invalid_media_type) do
+    {
+      'HTTP_AUTHORIZATION' => "Token token=#{api_key.access_token}",
+      'Accept' => "text/html"
+    }
+  end
+
   let(:headers) do
-    { 'HTTP_AUTHORIZATION' => "Token token=#{api_key.access_token}" }
+    {
+      'HTTP_AUTHORIZATION' => "Token token=#{api_key.access_token}",
+      'Accept' => "application/vnd.api+json"
+    }
   end
 
   let(:valid_keys) do
@@ -88,7 +98,7 @@ RSpec.describe "IpoProfilesController", type: :request do
 
     it 'returns json content type' do
       subject
-      expect(response.content_type).to eq("application/vnd.api+json; charset=utf-8")
+      expect(response.content_type).to eq("application/vnd.api+json")
     end
   end
 
@@ -111,6 +121,13 @@ RSpec.describe "IpoProfilesController", type: :request do
           get api_v1_last_100_ipos_path, headers: invalid_headers
           expect(response).to have_http_status(:unauthorized)
         end
+      end
+    end
+
+    context 'bad media type' do
+      it 'returns 406 if media type is not application/vnd.api+json' do
+        get api_v1_last_100_ipos_path, headers: invalid_media_type
+        expect(response).to have_http_status(:not_acceptable)
       end
     end
 
@@ -172,6 +189,13 @@ RSpec.describe "IpoProfilesController", type: :request do
           get api_v1_last_12_months_path, headers: invalid_headers
           expect(response).to have_http_status(:unauthorized)
         end
+      end
+    end
+
+    context 'bad media type' do
+      it 'returns 406 if media type is not application/vnd.api+json' do
+        get api_v1_last_12_months_path, headers: invalid_media_type
+        expect(response).to have_http_status(:not_acceptable)
       end
     end
 
@@ -238,6 +262,13 @@ RSpec.describe "IpoProfilesController", type: :request do
       end
     end
 
+    context 'bad media type' do
+      it 'returns 406 if media type is not application/vnd.api+json' do
+        get api_v1_current_year_pricings_path, headers: invalid_media_type
+        expect(response).to have_http_status(:not_acceptable)
+      end
+    end
+
     describe 'json body structure' do
       it 'has the correct json body structure' do
         create(:ipo_profile, :starting_from_beginning_of_year)
@@ -299,6 +330,13 @@ RSpec.describe "IpoProfilesController", type: :request do
       end
     end
 
+    context 'bad media type' do
+      it 'returns 406 if media type is not application/vnd.api+json' do
+        get api_v1_ipo_calendar_path, headers: invalid_media_type
+        expect(response).to have_http_status(:not_acceptable)
+      end
+    end
+
     describe 'json body structure' do
       it 'has the correct json body structure' do
         create(:ipo_profile)
@@ -357,6 +395,13 @@ RSpec.describe "IpoProfilesController", type: :request do
           get api_v1_ipos_recently_filed_path, headers: invalid_headers
           expect(response).to have_http_status(:unauthorized)
         end
+      end
+    end
+
+    context 'bad media type' do
+      it 'returns 406 if media type is not application/vnd.api+json' do
+        get api_v1_ipos_recently_filed_path, headers: invalid_media_type
+        expect(response).to have_http_status(:not_acceptable)
       end
     end
 
