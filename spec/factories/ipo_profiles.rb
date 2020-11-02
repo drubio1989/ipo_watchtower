@@ -19,7 +19,6 @@ FactoryBot.define do
     rate_of_return { ((current_price - first_day_close_price) / first_day_close_price).ceil(2) }
 
     company
-    industry
 
     trait :within_12_months do
       offer_date { (Date.today.last_year..Date.today).to_a.sample }

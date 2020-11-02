@@ -8,7 +8,7 @@ class IpoProfileSerializer
   end
 
   attributes :industry do |object|
-    object.industry.name
+    object.company.industry
   end
 
   attributes :symbol, :shares, :offer_date, :shares

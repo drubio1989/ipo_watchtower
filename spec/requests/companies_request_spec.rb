@@ -71,7 +71,7 @@ RSpec.describe "Companies", type: :request do
       "attributes"=> {
         "company"=> company.name,
         "symbol"=> ipo_profile.symbol,
-        "industry"=> ipo_profile.industry.name,
+        "industry"=> company.industry,
         "shares"=> ipo_profile.shares,
         "exchange"=> ipo_profile.exchange,
         "estimated_volume"=> ipo_profile.estimated_volume,

@@ -55,12 +55,6 @@ ActiveRecord::Schema.define(version: 2020_10_20_213218) do
     t.index ["sluggable_type", "sluggable_id"], name: "index_friendly_id_slugs_on_sluggable_type_and_sluggable_id"
   end
 
-  create_table "industries", force: :cascade do |t|
-    t.string "name"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
-  end
-
   create_table "ipo_profiles", force: :cascade do |t|
     t.string "symbol"
     t.string "exchange"
@@ -75,16 +69,13 @@ ActiveRecord::Schema.define(version: 2020_10_20_213218) do
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.bigint "company_id"
-    t.bigint "industry_id"
     t.float "first_day_close_price"
     t.date "offer_date"
     t.float "current_price"
     t.float "rate_of_return"
     t.date "file_date"
     t.index ["company_id"], name: "index_ipo_profiles_on_company_id"
-    t.index ["industry_id"], name: "index_ipo_profiles_on_industry_id"
   end
 
   add_foreign_key "ipo_profiles", "companies"
-  add_foreign_key "ipo_profiles", "industries"
 end

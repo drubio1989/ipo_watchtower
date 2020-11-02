@@ -30,7 +30,7 @@ RSpec.describe "IpoProfilesController", type: :request do
     {
       "company"=>ipo_profile.company.name,
       "symbol"=> ipo_profile.symbol,
-      "industry"=> ipo_profile.industry.name,
+      "industry"=> ipo_profile.company.industry,
       "offer_date"=>ipo_profile.offer_date.strftime("%Y-%m-%d"),
       "shares"=>ipo_profile.shares,
       "offer_price"=>ipo_profile.price_low,

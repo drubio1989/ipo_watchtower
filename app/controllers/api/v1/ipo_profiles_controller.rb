@@ -62,7 +62,7 @@ module Api::V1
     end
 
     def fetch_ipos
-      @ipos = IpoProfile.includes(:company, :industry)
+      @ipos = IpoProfile.includes(:company)
     end
 
     def serialize(objects, sparse_fields = {})
