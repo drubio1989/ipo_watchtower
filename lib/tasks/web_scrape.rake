@@ -6,7 +6,7 @@ namespace :web_scrape do
     companies = []
 
     ('A'..'Z').to_a.each do |letter|
-      html = URI.open(@url + "#{letter}/")
+      html = URI.open("https://www.iposcoop.com/ipo-index/#{letter}/")
       doc = Nokogiri::HTML(html)
       company_names = doc.css('.ipo-index').css('a')
       company_names.each do |company|
@@ -23,7 +23,7 @@ namespace :web_scrape do
   task populate_models: :environment do
   begin
     companies = []
-    Company.all[0..1].each do |company|
+    Company.all.each do |company|
       html = URI.open("https://www.iposcoop.com/ipo/#{company.slug}/")
   rescue OpenURI::HTTPError => e
       logger = Rails.logger
