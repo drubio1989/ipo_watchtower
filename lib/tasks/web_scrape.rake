@@ -19,6 +19,32 @@ namespace :web_scrape do
 end
 
 namespace :web_scrape do
+  desc "Updates the file date of ipo profile"
+  task populate_file_date: :environment do
+  begin
+    list_of_ipos = []
+    html = URI.open("https://www.iposcoop.com/ipos-recently-filed/")
+    doc = Nokogiri::HTML(html)
+
+    companies = doc.css('td:nth-child(2)').map(&:text)
+    file_date = doc.css('td:nth-child(1)').map(&:text)
+
+    doc.css('td:nth-child(2)').size.times do |counter|
+      company_name = companies[counter]
+      company = Company.find_by(name: company_name)
+      ipo_profile = company.ipo_profile
+      ipo_profile.file_date = Date.parse(file_date[counter])
+      list_of_ipos << ipo_profile
+  rescue StandardError => e
+    logger = Rails.logger
+    logger.error("File date was unable to be populated for #{company_name}")
+  end
+    end
+    IpoProfile.import list_of_ipos, recursive: true, on_duplicate_key_update: {conflict_target: [:id], columns: [:file_date]}
+  end
+end
+
+namespace :web_scrape do
   desc "Populates company and ipo_profile attributes. Should only have to be run twice."
   task populate_models: :environment do
   begin
