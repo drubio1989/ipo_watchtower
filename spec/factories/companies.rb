@@ -9,7 +9,6 @@ FactoryBot.define do
     address { Faker::Address.full_address }
     phone_number { Faker::PhoneNumber.phone_number }
     web_address { 'www.company.com' }
-    view_prospectus { 'www.company.com/prospectus.com' }
     market_cap { 4806.5}
     revenue { 2378.2 }
     net_income { 38.3 }

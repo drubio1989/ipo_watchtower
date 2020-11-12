@@ -11,6 +11,7 @@ FactoryBot.define do
     managers { 'Bank of America Merril Lynch/ J.P. Morgan/ Morgan Stanley' }
     co_managers { 'Blackstone Capital Markets/ CIBC World Markets' }
     expected_to_trade { (Date.today.beginning_of_week..Date.today + 2.weeks).to_a.sample }
+    industry { %w[HealthCare Financial Technology].sample }
     status { 'Priced' }
     file_date { (Date.today - 14.days) }
     offer_date { (Date.today + 7.days) }

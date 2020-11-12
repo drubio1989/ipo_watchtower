@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_11_12_155519) do
+ActiveRecord::Schema.define(version: 2020_11_12_155855) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -73,9 +73,9 @@ ActiveRecord::Schema.define(version: 2020_11_12_155519) do
     t.float "current_price"
     t.float "rate_of_return"
     t.date "file_date"
-    t.string "slug"
+    t.string "industry"
+    t.float "offer_price"
     t.index ["company_id"], name: "index_ipo_profiles_on_company_id"
-    t.index ["slug"], name: "index_ipo_profiles_on_slug", unique: true
   end
 
   add_foreign_key "ipo_profiles", "companies"

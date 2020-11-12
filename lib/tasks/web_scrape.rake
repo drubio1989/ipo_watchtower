@@ -19,7 +19,7 @@ namespace :web_scrape do
 end
 
 namespace :web_scrape do
-  task populate_company: :environment do
+  task update_company_attributes: :environment do
   begin
     companies = []
     Company.all.each do |company|
@@ -41,150 +41,109 @@ namespace :web_scrape do
       company.address = contact_info[0]
       company.phone_number = contact_info[1]
       company.web_address = doc.css('.odd:nth-child(9) a').text
+
+      financials = doc.css('.odd:nth-child(14) .first+ td , tr:nth-child(13) .first+ td , .odd:nth-child(12) .first+ td').children.map(&:text)
+
+      market_cap, revenue, net_income = financials[0], financials[1], financials[2]
+
+      if market_cap.nil?
+        company.market_cap = ''
+      else
+        company.market_cap = market_cap[1..(market_cap.index('m') - 1)].to_f
+      end
+
+      if revenue.nil?
+        company.revenue = ''
+      else
+        company.revenue = revenue[1..(revenue.index('m') - 1)].to_f
+      end
+
+      if net_income.nil?
+        company.net_income = ''
+      else
+        company.net_income = net_income[1..(net_income.index('m') - 1)].to_f
+      end
       companies << company
   rescue OpenURI::HTTPError, StandardError => e
       logger = Rails.logger
       logger.error("Populating attributes failed for #{company.name}. #{company.slug}" + ' ' + "#{e.message}")
     end
   end
-    Company.import companies, recursive: true, on_duplicate_key_update: [:industry, :employees, :founded, :address, :phone_number, :market_cap, :revenue, :net_income]
+    Company.import companies, on_duplicate_key_update: [:industry, :employees, :founded, :address, :phone_number, :market_cap, :revenue, :net_income, :description]
   end
 end
 
 namespace :web_scrape do
-  task populate_last_12_months: :environment do
-    newly_initialized_models = []
-    new_ipos = []
-    updated_ipos = []
+  task update_ipo_attributes: :environment do
+  begin
+    ipos = []
+    Company.all.each do |company|
+      html = URI.open("https://www.iposcoop.com/ipo/#{company.slug}/")
+      doc = Nokogiri::HTML(html)
+
+      ipo_profile_attrs = doc.css('.odd:nth-child(23) .first+ td , tr:nth-child(24) .first+ td , tr:nth-child(22) .first+ td , .odd:nth-child(21) .first+ td , tr:nth-child(20) .first+ td , .odd:nth-child(19) .first+ td , tr:nth-child(18) .first+ td , .odd:nth-child(17) .first+ td , tr:nth-child(16) .first+ td').map(&:text)
+      expected_to_trade = ipo_profile_attrs[7].strip.split('/').map(&:to_i)
+
+      expected_to_trade.empty? ? expected_to_trade = '' : expected_to_trade = Date.new(expected_to_trade[2], expected_to_trade[0], expected_to_trade[1])
+
+      ipo_profile = company.ipo_profile
+      ipo_profile.expected_to_trade = expected_to_trade
+      ipo_profile.co_managers = ipo_profile_attrs[6].strip
+      ipos << ipo_profile
+  rescue OpenURI::HTTPError, StandardError => e
+      logger = Rails.logger
+      logger.error("Populating attributes failed for #{company.name}. #{company.slug}" + ' ' + "#{e.message}")
+    end
+  end
+    IpoProfile.import ipos, on_duplicate_key_update: [:expected_to_trade, :co_managers]
+  end
+end
+
+namespace :web_scrape do
+  task create_models: :environment do
+    companies = []
 
     html = URI.open("https://www.iposcoop.com/last-12-months/")
     doc = Nokogiri::HTML(html)
 
-    companies = doc.css('td:nth-child(1)').map(&:text)
+    names = doc.css('td:nth-child(1)').map(&:text)
+    symbols = doc.css('td:nth-child(2)').map(&:text)
+    industry = doc.css('td:nth-child(3)').map(&:text)
     offer_dates = doc.css('td:nth-child(4)').map(&:text)
     shares = doc.css('td:nth-child(5)').map(&:text)
-    price_high = doc.css('td:nth-child(6)').map(&:text)
+    offer_price = doc.css('td:nth-child(6)').map(&:text)
     first_day_close_price = doc.css('td:nth-child(7)').map(&:text)
     current_price = doc.css('td:nth-child(8)').map(&:text)
     rate_of_return = doc.css('td:nth-child(9)').map(&:text)
 
-    doc.css('td:nth-child(2)').size.times do |counter|
-      company_name = companies[counter]
-      date = offer_dates[counter].split('/').map(&:to_i)
-
-      if Company.exists?(name: company_name)
-        company = Company.find_by(name: company_name)
-        if company.ipo_profile.nil?
-          ipo_profile = IpoProfile.new(
-            offer_date: Date.new(date[2], date[0], date[1]),
-            price_high: price_high[counter][1..-1].to_f,
-            first_day_close_price: first_day_close_price[counter][1..-1].to_f,
-            current_price: current_price[counter][1..-1].to_f,
-            rate_of_return: rate_of_return[counter][1..-2].to_f,
-            company_id: company.id
-          )
-          new_ipos << ipo_profile
-        else
-          ipo_profile = company.ipo_profile
-          ipo_profile.offer_date = Date.new(date[2], date[0], date[1])
-          ipo_profile.price_high = price_high[counter][1..-1].to_f
-          ipo_profile.first_day_close_price = first_day_close_price[counter][1..-1].to_f
-          ipo_profile.current_price = current_price[counter][1..-1].to_f
-          ipo_profile.rate_of_return = rate_of_return[counter][1..-2].to_f
-        end
-        updated_ipos << ipo_profile
-      else
-        company = Company.new(name: company_name)
-        company.build_ipo_profile(
-          offer_date: Date.new(date[2], date[0], date[1]),
-          price_high: price_high[counter][1..-1].to_f,
-          first_day_close_price: first_day_close_price[counter][1..-1].to_f,
-          current_price: current_price[counter][1..-1].to_f,
-          rate_of_return: rate_of_return[counter][1..-2].to_f
-        )
-        newly_initialized_models << company
-      end
+    doc.css('td:nth-child(1)').size.times do |counter|
+      offer_date = offer_dates[counter].split('/').map(&:to_i)
+      company = Company.new(name: names[counter])
+      company.build_ipo_profile(
+        symbol: symbols[counter],
+        industry: industry[counter],
+        offer_date: Date.new(offer_date[2], offer_date[0], offer_date[1]),
+        shares: shares[counter],
+        offer_price: offer_price[counter][1..-1].to_f,
+        first_day_close_price: first_day_close_price[counter][1..-1].to_f,
+        current_price: current_price[counter][1..-1].to_f,
+        rate_of_return: rate_of_return[counter][0..-2].to_f
+      )
+      companies << company
     end
-    Company.import newly_initialized_models, recursive: true
-    IpoProfile.import new_ipos
-    IpoProfile.import updated_ipos, on_duplicate_key_update: [:offer_date, :price_high, :first_day_close_price, :current_price, :rate_of_return]
+    Company.import companies, recursive: true
   end
 end
 
-# TODO: Do I need this?
-# namespace :web_scrape do
-#   desc "Populates company and ipo_profile attributes. Should only have to be run twice."
-#   task populate_models: :environment do
-#   begin
-#     companies = []
-#     Company.all.each do |company|
-#       financial_attrs = doc.css('.odd:nth-child(14) .first+ td , tr:nth-child(13) .first+ td , .odd:nth-child(12) .first+ td').children.map(&:text)
-#
-#       market_cap, revenue, net_income = financial_attrs[0], financial_attrs[1], financial_attrs[2]
-#
-#       if market_cap.nil?
-#         company.market_cap = ''
-#       else
-#         company.market_cap = market_cap[1..(market_cap.index('m') - 1)].to_f
-#       end
-#
-#       if revenue.nil?
-#         company.revenue = ''
-#       else
-#         company.revenue = revenue[1..(revenue.index('m') - 1)].to_f
-#       end
-#
-#       if net_income.nil?
-#         company.net_income = ''
-#       else
-#         company.net_income = net_income[1..(net_income.index('m') - 1)].to_f
-#       end
-#
-#       ipo_profile_attrs = doc.css('.odd:nth-child(23) .first+ td , tr:nth-child(24) .first+ td , tr:nth-child(22) .first+ td , .odd:nth-child(21) .first+ td , tr:nth-child(20) .first+ td , .odd:nth-child(19) .first+ td , tr:nth-child(18) .first+ td , .odd:nth-child(17) .first+ td , tr:nth-child(16) .first+ td').map(&:text)
-#       expected_to_trade = ipo_profile_attrs[7].strip.split('/').map(&:to_i)
-#
-#       expected_to_trade.empty? ? expected_to_trade = '' : expected_to_trade = Date.new(expected_to_trade[2], expected_to_trade[0], expected_to_trade[1])
-#       estimated_volume = ipo_profile_attrs[4]
-#       if estimated_volume.nil?
-#         estimated_volume = ''
-#       else
-#         estimated_volume = estimated_volume[1..(estimated_volume.index('m') - 1)].to_f
-#       end
-#
-#       ipo_profile = company.build_ipo_profile(
-#         symbol: ipo_profile_attrs[0],
-#         exchange: ipo_profile_attrs[1],
-#         shares: ipo_profile_attrs[2].to_f,
-#         price_low: ipo_profile_attrs[3].gsub('$','').split('-').map(&:to_f)[0],
-#         price_high: ipo_profile_attrs[3].gsub('$','').split('-').map(&:to_f)[1],
-#         estimated_volume: estimated_volume,
-#         managers: ipo_profile_attrs[5].strip,
-#         co_managers: ipo_profile_attrs[6].strip,
-#         expected_to_trade: expected_to_trade,
-#         status: ipo_profile_attrs[8]
-#       )
-#       companies << company
-#   rescue OpenURI::HTTPError, StandardError => e
-#       logger = Rails.logger
-#       logger.error("Populating attributes failed for #{company.name}. #{company.slug}" + ' ' + "#{e.message}")
-#     end
-#   end
-#     Company.import companies, recursive: true, on_duplicate_key_update: [:industry, :employees, :founded, :address, :phone_number, :market_cap, :revenue, :net_income]
-#   end
-# end
-
-
-
-#
 namespace :web_scrape do
-  task populate_recently_filed: :environment do
-    companies= []
+  task create_models_two: :environment do
+    companies = []
+
     html = URI.open("https://www.iposcoop.com/ipos-recently-filed/")
     doc = Nokogiri::HTML(html)
 
-    counter = 0
     file_dates = doc.css('td:nth-child(1)').map(&:text)
-    company_names = doc.css('td:nth-child(2)').map(&:text)
+    names = doc.css('td:nth-child(2)').map(&:text)
     symbols = doc.css('td:nth-child(3)').map(&:text)
     managers = doc.css('td:nth-child(4)').map(&:text)
     shares = doc.css('td:nth-child(5)').map(&:text)
@@ -194,24 +153,95 @@ namespace :web_scrape do
     status = doc.css('td:nth-child(9)').map(&:text)
 
     doc.css('td:nth-child(2)').size.times do |counter|
-      #TODO: Take into account IMNM
-      next '' if symbols[counter] == 'IMNM'
-      status[counter] = '' if [status[counter]].include? %w[Monday Tuesday Wednesday Thursday Friday Saturday Sunday]
-      company = Company.new(name: company_names[counter])
-      company.build_ipo_profile(
-        file_date: Date.parse(file_dates[counter]),
-        symbol: symbols[counter],
-        managers: managers[counter],
-        shares: shares[counter].to_f,
-        price_low: price_low[counter][1..-1].to_f,
-        price_high: price_high[counter][1..-1].to_f,
-        estimated_volume: estimated_volume[counter][1..-1].to_f,
-        status: status[counter].strip
-      )
-
-      companies << company
+      unless Company.exists?(name: names[counter])
+        status[counter] = '' if [status[counter]].include? %w[Monday Tuesday Wednesday Thursday Friday Saturday Sunday]
+        symbols[counter] = '' if symbols[counter] == 'TBA'
+        company = Company.new(name: names[counter])
+        symbols[counter] = 'GBRG.RC' if company.name == 'Goldenbridge Acquisition Ltd.'
+        company.build_ipo_profile(
+          file_date: Date.parse(file_dates[counter]),
+          symbol: symbols[counter],
+          managers: managers[counter],
+          shares: shares[counter].to_f,
+          price_low: price_low[counter][1..-1].to_f,
+          price_high: price_high[counter][1..-1].to_f,
+          estimated_volume: estimated_volume[counter][1..-1].to_f,
+          status: status[counter].strip
+        )
+        companies << company
+      end
     end
-
     Company.import companies, recursive: true
+  end
+end
+
+namespace :web_scrape do
+  task update_models: :environment do
+    ipos = []
+    html = URI.open("https://www.iposcoop.com/last-12-months/")
+    doc = Nokogiri::HTML(html)
+
+    names = doc.css('td:nth-child(1)').map(&:text)
+    symbols = doc.css('td:nth-child(2)').map(&:text)
+    industry = doc.css('td:nth-child(3)').map(&:text)
+    offer_dates = doc.css('td:nth-child(4)').map(&:text)
+    shares = doc.css('td:nth-child(5)').map(&:text)
+    offer_price = doc.css('td:nth-child(6)').map(&:text)
+    first_day_close_price = doc.css('td:nth-child(7)').map(&:text)
+    current_price = doc.css('td:nth-child(8)').map(&:text)
+    rate_of_return = doc.css('td:nth-child(9)').map(&:text)
+
+    doc.css('td:nth-child(1)').size.times do |counter|
+      offer_date = offer_dates[counter].split('/').map(&:to_i)
+      ipo_profile = IpoProfile.find_by(symbol: symbols[counter])
+      ipo_profile.symbol = symbols[counter]
+      ipo_profile.industry = industry[counter]
+      ipo_profile.offer_date = Date.new(offer_date[2], offer_date[0], offer_date[1])
+      ipo_profile.shares = shares[counter]
+      ipo_profile.offer_price = offer_price[counter][1..-1].to_f
+      ipo_profile.first_day_close_price = first_day_close_price[counter][1..-1].to_f
+      ipo_profile.current_price = current_price[counter][1..-1].to_f
+      ipo_profile.rate_of_return = rate_of_return[counter][0..-2].to_f
+      ipos << ipo_profile
+    end
+    IpoProfile.import ipos, on_duplicate_key_update: [:symbol, :industry, :offer_date, :shares, :offer_price, :first_day_close_price, :current_price, :rate_of_return]
+  end
+end
+
+namespace :web_scrape do
+  task update_models_two: :environment do
+    ipos = []
+    html = URI.open("https://www.iposcoop.com/ipos-recently-filed/")
+    doc = Nokogiri::HTML(html)
+
+    file_dates = doc.css('td:nth-child(1)').map(&:text)
+    names = doc.css('td:nth-child(2)').map(&:text)
+    symbols = doc.css('td:nth-child(3)').map(&:text)
+    managers = doc.css('td:nth-child(4)').map(&:text)
+    shares = doc.css('td:nth-child(5)').map(&:text)
+    price_low = doc.css('td:nth-child(6)').map(&:text)
+    price_high = doc.css('td:nth-child(7)').map(&:text)
+    estimated_volume = doc.css('td:nth-child(8)').map(&:text)
+    status = doc.css('td:nth-child(9)').map(&:text)
+
+    doc.css('td:nth-child(2)').size.times do |counter|
+      status[counter] = '' if [status[counter]].include? %w[Monday Tuesday Wednesday Thursday Friday Saturday Sunday]
+      symbols[counter] = '' if symbols[counter] == 'TBA'
+      ipo_profile = IpoProfile.find_by(symbol: symbols[counter])
+      next if ipo_profile.nil?
+      symbols[counter] = 'GBRG.RC' if names[counter] == 'Goldenbridge Acquisition Ltd.'
+      ipo_profile.symbol = symbols[counter]
+      ipo_profile.shares = shares[counter].to_f
+      ipo_profile.price_low = price_low[counter][1..-1].to_f
+      ipo_profile.price_high = price_high[counter][1..-1].to_f
+      ipo_profile.estimated_volume = estimated_volume[counter][1..-1].to_f
+      ipo_profile.status = status[counter].strip
+      ipo_profile.file_date = Date.parse(file_dates[counter])
+      ipo_profile.managers = managers[counter]
+      ipo_profile.symbol = symbols[counter]
+      ipos << ipo_profile
+    end
+    ipos.uniq!
+    IpoProfile.import ipos, on_duplicate_key_update: {conflict_target: [:id], columns: [:file_date, :symbol, :managers, :shares, :price_low, :price_high, :estimated_volume, :status]}
   end
 end
