@@ -28,8 +28,6 @@ module Api::V1
       end
     end
 
-    #TODO: I need to tease the functinonality out on what it means to begin
-    # 'recently filed' and not trading on an exchange.
     def recently_filed
       jsonapi_paginate(@ipos.where("DATE(file_date) >= ?", Date.today - 6.months).order(file_date: :desc)) do |ipos|
         serialize(ipos, recently_filed_fields)
