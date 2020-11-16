@@ -9,14 +9,11 @@ Rails.application.routes.draw do
         get 'current-year-pricings', to: 'ipo_profiles#current_year_pricings', constraints: -> request { request.format == :api_json }
         get 'ipo-calendar', to: 'ipo_profiles#ipo_calendar', constraints: -> request { request.format == :api_json }
         get 'ipo-index', to: 'companies#index', constraints: -> request { request.format == :api_json }
-
-
       end
 
-      scope :ipo do
-        defaults format: :api_json do
-          resources :companies, only: [:show], constraints: -> request { request.format == :api_json }
-        end
+      defaults format: :api_json do
+        get 'ipo_profiles/:symbol', to: 'ipo_profiles#show', as: 'ipo_profile', constraints: -> request { request.format == :api_json }
+        get 'companies/:symbol', to: 'companies#show', as: 'company', constraints: -> request { request.format == :api_json }
       end
     end
   end
@@ -25,5 +22,3 @@ Rails.application.routes.draw do
     match '*path', to: 'errors#unsupported_request', via: :all
   end
 end
-
-#Todo: specific industries

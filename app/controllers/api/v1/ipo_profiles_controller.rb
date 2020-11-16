@@ -3,6 +3,7 @@ module Api::V1
     include JSONAPI::Pagination
 
     before_action :fetch_ipos
+    before_action :fetch_stock_ticker, only: [:show]
 
     def last_100
       jsonapi_paginate(@ipos.where("DATE(offer_date) >= ?", Date.today.last_year).limit(100)) do |ipos|
@@ -34,6 +35,10 @@ module Api::V1
       end
     end
 
+    def show
+      serialize(@ipo)
+    end
+
     private
 
     def calendar_info_fields
@@ -57,6 +62,11 @@ module Api::V1
         :managers, :shares, :price_low, :price_high,
         :estimated_volume, :expected_to_trade]
       }
+    end
+
+    def fetch_stock_ticker
+      ticker = StockTicker.find(symbol: params[:symbol])
+      @ipo = ticker.ipo_profile
     end
 
     def fetch_ipos

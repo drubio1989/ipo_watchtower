@@ -57,7 +57,6 @@ ActiveRecord::Schema.define(version: 2020_11_16_213248) do
   end
 
   create_table "ipo_profiles", force: :cascade do |t|
-    t.string "symbol"
     t.string "exchange"
     t.float "shares"
     t.float "price_low"

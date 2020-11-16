@@ -6,5 +6,6 @@ class CreateStockTicker < ActiveRecord::Migration[6.0]
     end
 
     add_reference :companies, :stock_ticker, foreign_key: true
+    remove_column :ipo_profiles, :symbol, :string
   end
 end

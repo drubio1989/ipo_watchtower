@@ -5,7 +5,7 @@ FactoryBot.define do
     description { Faker::Company.bs  }
     industry { Faker::Company.industry }
     employees { random.rand(200) }
-    founded { Date.today - random.rand(365).days }
+    founded { 2008 }
     address { Faker::Address.full_address }
     phone_number { Faker::PhoneNumber.phone_number }
     web_address { 'www.company.com' }

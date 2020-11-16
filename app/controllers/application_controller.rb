@@ -1,12 +1,24 @@
 class ApplicationController < ActionController::API
   include ActionController::HttpAuthentication::Basic::ControllerMethods
   include ActionController::HttpAuthentication::Token::ControllerMethods
+  rescue_from ActiveRecord::RecordNotFound, with: :not_found
 
   before_action :authenticate_request
   before_action :validate_accept_header
   before_action :set_headers
 
   private
+
+  def not_found(exception)
+    render json: {
+      errors: [
+        "status"=> "404",
+        "title"=>"Resource Not Found",
+        "detail"=> exception.message
+      ]
+    },
+    status: :not_found
+  end
 
   def validate_accept_header
     if request.headers["Accept"] != 'application/vnd.api+json'
@@ -24,7 +36,7 @@ class ApplicationController < ActionController::API
   def set_headers
     response.headers['Content-Type'] = 'application/vnd.api+json'
   end
-  
+
   # https://ropesec.com/articles/timing-attacks/
   # https://thoughtbot.com/blog/token-authentication-with-rails
   # https://stackoverflow.com/questions/17712359/authenticate-or-request-with-http-token-returning-html-instead-of-json

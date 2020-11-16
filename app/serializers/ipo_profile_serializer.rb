@@ -3,6 +3,10 @@ class IpoProfileSerializer
 
   set_type :ipo
 
+  attributes :ticker do |object|
+    object.company.stock_ticker.ticker
+  end
+
   attributes :company do |object|
     object.company.name
   end
@@ -11,7 +15,7 @@ class IpoProfileSerializer
     object.industry
   end
 
-  attributes :symbol, :shares, :offer_date, :shares
+  attributes :shares, :offer_date
   attributes :offer_price do |object|
     object.price_low
   end
@@ -26,7 +30,7 @@ class IpoProfileSerializer
 
   belongs_to :company, links: {
     related: -> (object) {
-      "#{ENV["DOMAIN_URL"]}/api/v1/ipo/companies/#{object.company.slug}"
+      "#{ENV["DOMAIN_URL"]}/api/v1/companies/#{object.company.stock_ticker}"
     }
   }
 
