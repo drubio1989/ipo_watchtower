@@ -9,6 +9,8 @@ Rails.application.routes.draw do
         get 'current-year-pricings', to: 'ipo_profiles#current_year_pricings', constraints: -> request { request.format == :api_json }
         get 'ipo-calendar', to: 'ipo_profiles#ipo_calendar', constraints: -> request { request.format == :api_json }
         get 'ipo-index', to: 'companies#index', constraints: -> request { request.format == :api_json }
+
+
       end
 
       scope :ipo do

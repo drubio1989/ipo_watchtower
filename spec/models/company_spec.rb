@@ -7,6 +7,7 @@ RSpec.describe Company, type: :model do
 
   it { should have_one(:ipo_profile) }
   it { should have_db_column(:slug) }
+  it { should belong_to(:stock_ticker) }
 
   describe '.name_starts_with_letter' do
     it 'lists companies that start with a particular letter' do

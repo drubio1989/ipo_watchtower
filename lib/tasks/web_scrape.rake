@@ -14,7 +14,7 @@ namespace :web_scrape do
       end
     end
 
-    Company.import companies, on_duplicate_key_ignore: true
+    Company.import companies, on_duplicate_key_update: true
   end
 end
 
@@ -89,13 +89,14 @@ namespace :web_scrape do
       ipo_profile = company.ipo_profile
       ipo_profile.expected_to_trade = expected_to_trade
       ipo_profile.co_managers = ipo_profile_attrs[6].strip
+      ipos_profile.exchange = doc.css('.odd:nth-child(17) .first+ td').text.strip
       ipos << ipo_profile
   rescue OpenURI::HTTPError, StandardError => e
       logger = Rails.logger
       logger.error("Populating attributes failed for #{company.name}. #{company.slug}" + ' ' + "#{e.message}")
     end
   end
-    IpoProfile.import ipos, on_duplicate_key_update: [:expected_to_trade, :co_managers]
+    IpoProfile.import ipos, on_duplicate_key_update: [:exchange, :expected_to_trade, :co_managers]
   end
 end
 

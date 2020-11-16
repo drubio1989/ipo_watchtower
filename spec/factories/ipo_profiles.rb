@@ -1,8 +1,7 @@
 FactoryBot.define do
   factory :ipo_profile do
     random = Random.new
-
-    symbol { ('A'..'Z').to_a.sample(4).join }
+    
     exchange { %w[NYSE NASDAQ AMEX].sample }
     shares { random.rand(50).to_f }
     price_low { random.rand(20).to_f }
@@ -13,6 +12,7 @@ FactoryBot.define do
     expected_to_trade { (Date.today.beginning_of_week..Date.today + 2.weeks).to_a.sample }
     industry { %w[HealthCare Financial Technology].sample }
     status { 'Priced' }
+    exchange { 'NASDAQ'}
     file_date { (Date.today - 14.days) }
     offer_date { (Date.today + 7.days) }
     first_day_close_price { (20..60).to_a.sample.to_f }

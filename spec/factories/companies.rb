@@ -13,5 +13,7 @@ FactoryBot.define do
     revenue { 2378.2 }
     net_income { 38.3 }
     slug { }
+
+    stock_ticker
   end
 end

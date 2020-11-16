@@ -5,7 +5,7 @@ module Api::V1
     before_action :fetch_ipos
 
     def last_100
-      jsonapi_paginate(@ipos.limit(100).order(offer_date: :desc)) do |ipos|
+      jsonapi_paginate(@ipos.where("DATE(offer_date) >= ?", Date.today.last_year).limit(100)) do |ipos|
         serialize(ipos, listing_fields)
       end
     end
