@@ -12,8 +12,8 @@ module Api::V1
       options = {}
       options[:include] = [:ipo_profile]
       options[:fields] = ipo_profile_fields
-      ticker = StockTicker.find_by(ticker: params[:symbol])
-      raise ActiveRecord::RecordNotFound.new "No company found for ticker #{params[:symbol]}" if ticker.nil?
+      ticker = StockTicker.find_by(ticker: params[:ticker])
+      raise ActiveRecord::RecordNotFound.new "No company found for ticker #{params[:ticker]}" if ticker.nil?
       @company = ticker.company
       serialize(@company, options)
     end

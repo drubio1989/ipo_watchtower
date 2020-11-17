@@ -43,14 +43,14 @@ module Api::V1
 
     def calendar_info_fields
       {
-        ipo: [:company, :symbol, :managers, :shares,
+        ipo: [:company, :ticker, :managers, :shares,
         :price_low, :price_high, :estimated_volume, :expected_to_trade]
       }
     end
 
     def listing_fields
       {
-        ipo: [:company, :symbol, :industry, :offer_date,
+        ipo: [:company, :ticker, :industry, :offer_date,
         :shares, :offer_price, :first_day_close_price,
         :current_price, :rate_of_return]
       }
@@ -58,14 +58,15 @@ module Api::V1
 
     def recently_filed_fields
       {
-        ipo: [:file_date, :company, :symbol,
+        ipo: [:file_date, :company, :ticker,
         :managers, :shares, :price_low, :price_high,
         :estimated_volume, :expected_to_trade]
       }
     end
 
     def fetch_stock_ticker
-      ticker = StockTicker.find(symbol: params[:symbol])
+      ticker = StockTicker.find_by(ticker: params[:ticker])
+      raise ActiveRecord::RecordNotFound.new "No ipo found for ticker #{params[:ticker]}" if ticker.nil?
       @ipo = ticker.ipo_profile
     end
 

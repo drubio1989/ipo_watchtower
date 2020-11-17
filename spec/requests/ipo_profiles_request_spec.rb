@@ -8,6 +8,14 @@ RSpec.describe "IpoProfilesController", type: :request do
     { 'HTTP_AUTHORIZATION' => "Token token=#{disabled_key.access_token}" }
   end
 
+  def valid_error(ticker)
+    {
+      "status"=> "404",
+      "title"=> "Resource Not Found",
+      "detail"=> "No ipo found for ticker #{ticker}"
+    }
+  end
+
   let(:invalid_media_type) do
     {
       'HTTP_AUTHORIZATION' => "Token token=#{api_key.access_token}",
@@ -29,8 +37,8 @@ RSpec.describe "IpoProfilesController", type: :request do
   def valid_attributes(ipo_profile)
     {
       "company"=>ipo_profile.company.name,
-      "symbol"=> ipo_profile.symbol,
-      "industry"=> ipo_profile.company.industry,
+      "ticker"=> ipo_profile.company.stock_ticker.ticker,
+      "industry"=> ipo_profile.industry,
       "offer_date"=>ipo_profile.offer_date.strftime("%Y-%m-%d"),
       "shares"=>ipo_profile.shares,
       "offer_price"=>ipo_profile.price_low,
@@ -48,7 +56,7 @@ RSpec.describe "IpoProfilesController", type: :request do
             "type"=> "company"
         },
         "links"=> {
-          "related"=> "#{api_v1_company_path(company.slug)}"
+          "related"=> "#{api_v1_company_path(company.stock_ticker.ticker)}"
         }
       }
     }
@@ -57,8 +65,8 @@ RSpec.describe "IpoProfilesController", type: :request do
   def valid_recently_filed_attributes(ipo_profile)
     {
       "file_date"=> ipo_profile.file_date.strftime("%Y-%m-%d"),
-      "company"=> ipo_profile.company.name,
-      "symbol"=> ipo_profile.symbol,
+      "ticker"=> ipo_profile.company.name,
+      "ticker"=> ipo_profile.company.stock_ticker.ticker,
       "managers"=> ipo_profile.managers,
       "shares"=> ipo_profile.shares,
       "price_low"=> ipo_profile.price_low,
@@ -71,7 +79,7 @@ RSpec.describe "IpoProfilesController", type: :request do
   def valid_calendar_attributes(ipo_profile)
     {
       "company"=>ipo_profile.company.name,
-      "symbol"=> ipo_profile.symbol,
+      "ticker"=> ipo_profile.company.stock_ticker.ticker,
       "managers"=> ipo_profile.managers,
       "shares"=>ipo_profile.shares,
       "price_low"=>ipo_profile.price_low,
@@ -441,6 +449,60 @@ RSpec.describe "IpoProfilesController", type: :request do
         payload = json_pagination
         expect(payload).to include valid_pagination_linkage
       end
+    end
+  end
+
+  describe 'GET #show' do
+    let(:ipo_profile) { create(:ipo_profile) }
+    let(:stock_ticker) { ipo_profile.company.stock_ticker }
+
+    context 'status codes' do
+      subject { get api_v1_ipo_profile_path(stock_ticker.ticker), headers: headers }
+      it_behaves_like 'requests_and_status_codes'
+    end
+
+    context 'unauthorized' do
+      context 'with missing api key' do
+        it 'returns 401' do
+          get api_v1_ipo_profile_path(stock_ticker.ticker)
+          expect(response).to have_http_status(:unauthorized)
+        end
+      end
+
+      context 'with a disabled key' do
+        it 'returns 401' do
+          get api_v1_ipo_profile_path(stock_ticker.ticker), headers: invalid_headers
+          expect(response).to have_http_status(:unauthorized)
+        end
+      end
+    end
+
+    context 'bad media type' do
+      it 'returns 406 if media type is not application/vnd.api+json' do
+        get api_v1_ipo_profile_path(stock_ticker.ticker), headers: invalid_media_type
+        expect(response).to have_http_status(:not_acceptable)
+      end
+    end
+
+    context 'errors' do
+      it 'returns 404 and error object if record is not found' do
+        get api_v1_ipo_profile_path('NTFD'), headers: headers
+        expect(response).to have_http_status(:not_found)
+      end
+
+      it 'has the proper error json body structure' do
+        get api_v1_ipo_profile_path('NTSD'), headers: headers
+        expect(json_error[0]).to include valid_error('NTSD')
+      end
+    end
+
+    it 'has the correct json body structure' do
+      get api_v1_ipo_profile_path(stock_ticker.ticker), headers: headers
+      payload = json_data
+
+      expect(payload.keys).to eq valid_keys
+      expect(payload["attributes"]).to include valid_attributes(stock_ticker.ipo_profile)
+      expect(payload["relationships"]).to include valid_relationships(stock_ticker.company)
     end
   end
 end

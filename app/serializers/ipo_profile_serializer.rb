@@ -30,7 +30,7 @@ class IpoProfileSerializer
 
   belongs_to :company, links: {
     related: -> (object) {
-      "#{ENV["DOMAIN_URL"]}/api/v1/companies/#{object.company.stock_ticker}"
+      "#{ENV["DOMAIN_URL"]}/api/v1/companies/#{object.company.stock_ticker.ticker}"
     }
   }
 

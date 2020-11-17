@@ -12,8 +12,8 @@ Rails.application.routes.draw do
       end
 
       defaults format: :api_json do
-        get 'ipo_profiles/:symbol', to: 'ipo_profiles#show', as: 'ipo_profile', constraints: -> request { request.format == :api_json }
-        get 'companies/:symbol', to: 'companies#show', as: 'company', constraints: -> request { request.format == :api_json }
+        get 'ipo_profiles/:ticker', to: 'ipo_profiles#show', as: 'ipo_profile', constraints: -> request { request.format == :api_json }
+        get 'companies/:ticker', to: 'companies#show', as: 'company', constraints: -> request { request.format == :api_json }
       end
     end
   end
