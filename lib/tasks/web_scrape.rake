@@ -3,6 +3,7 @@ require 'open-uri'
 namespace :web_scrape do
   desc "Creates an ipo index"
   task populate_index: :environment do
+  begin
     companies = []
 
     ('A'..'Z').to_a.each do |letter|
@@ -13,7 +14,10 @@ namespace :web_scrape do
         companies << Company.new(name: company.attributes['title'].value)
       end
     end
-
+  rescue OpenURI::HTTPError, StandardError => e
+      logger = Rails.logger
+      logger.error("Populating attributes failed for #{company.name}. #{company.slug}" + ' ' + "#{e.message}")
+  end
     Company.import companies, on_duplicate_key_update: true
   end
 end
@@ -81,15 +85,13 @@ namespace :web_scrape do
       html = URI.open("https://www.iposcoop.com/ipo/#{company.slug}/")
       doc = Nokogiri::HTML(html)
 
-      ipo_profile_attrs = doc.css('.odd:nth-child(23) .first+ td , tr:nth-child(24) .first+ td , tr:nth-child(22) .first+ td , .odd:nth-child(21) .first+ td , tr:nth-child(20) .first+ td , .odd:nth-child(19) .first+ td , tr:nth-child(18) .first+ td , .odd:nth-child(17) .first+ td , tr:nth-child(16) .first+ td').map(&:text)
-      expected_to_trade = ipo_profile_attrs[7].strip.split('/').map(&:to_i)
-
+      expected_to_trade = doc.css('.odd:nth-child(23) .first+ td').children.first.text.strip.split('/').map(&:to_i)
       expected_to_trade.empty? ? expected_to_trade = '' : expected_to_trade = Date.new(expected_to_trade[2], expected_to_trade[0], expected_to_trade[1])
 
       ipo_profile = company.ipo_profile
       ipo_profile.expected_to_trade = expected_to_trade
-      ipo_profile.co_managers = ipo_profile_attrs[6].strip
-      ipos_profile.exchange = doc.css('.odd:nth-child(17) .first+ td').text.strip
+      ipo_profile.co_managers = doc.css('tr:nth-child(22) .first+ td').text.strip
+      ipo_profile.exchange = doc.css('.odd:nth-child(17) .first+ td').text.strip
       ipos << ipo_profile
   rescue OpenURI::HTTPError, StandardError => e
       logger = Rails.logger
@@ -119,6 +121,7 @@ namespace :web_scrape do
     rate_of_returns = doc.css('td:nth-child(9)').map(&:text)
 
     doc.css('td:nth-child(1)').size.times do |counter|
+      next if StockTicker.exists?(ticker: tickers[counter])
       offer_date = offer_dates[counter].split('/').map(&:to_i)
       stock_ticker = StockTicker.new(ticker: tickers[counter])
       company = stock_ticker.build_company(name: company_names[counter])
@@ -160,6 +163,7 @@ namespace :web_scrape do
     statuses = doc.css('td:nth-child(9)').map(&:text)
 
     doc.css('td:nth-child(2)').size.times do |counter|
+      next if StockTicker.exists?(ticker: tickers[counter])
       stock_ticker = StockTicker.new(ticker: tickers[counter])
       company = stock_ticker.build_company(name: company_names[counter])
       statuses[counter] = '' if [statuses[counter]].include? %w[Monday Tuesday Wednesday Thursday Friday Saturday Sunday]
@@ -201,6 +205,7 @@ namespace :web_scrape do
     rate_of_returns = doc.css('td:nth-child(9)').map(&:text)
 
     doc.css('td:nth-child(1)').size.times do |counter|
+      next unless StockTicker.exists?(ticker: tickers[counter])
       offer_date = offer_dates[counter].split('/').map(&:to_i)
       stock_ticker = StockTicker.find_by(ticker: tickers[counter])
       ipo_profile = stock_ticker.ipo_profile
@@ -223,14 +228,14 @@ end
 
 namespace :web_scrape do
   task update_models_two: :environment do
+  begin
     ipos = []
-    tickers = []
     html = URI.open("https://www.iposcoop.com/ipos-recently-filed/")
     doc = Nokogiri::HTML(html)
 
     file_dates = doc.css('td:nth-child(1)').map(&:text)
     company_names = doc.css('td:nth-child(2)').map(&:text)
-    symbols = doc.css('td:nth-child(3)').map(&:text)
+    tickers = doc.css('td:nth-child(3)').map(&:text)
     managers = doc.css('td:nth-child(4)').map(&:text)
     shares = doc.css('td:nth-child(5)').map(&:text)
     price_low = doc.css('td:nth-child(6)').map(&:text)
@@ -239,16 +244,12 @@ namespace :web_scrape do
     status = doc.css('td:nth-child(9)').map(&:text)
 
     doc.css('td:nth-child(2)').size.times do |counter|
+      next unless StockTicker.exists?(ticker: tickers[counter])
       status[counter] = '' if [status[counter]].include? %w[Monday Tuesday Wednesday Thursday Friday Saturday Sunday]
 
-      stock_ticker = StockTicker.find_by(ticker: tickers[counter])
-      company = Company.find_by(name: company_names[counter])
-      if stock_ticker.nil? && company.present?
-        stock_ticker.ticker = tickers[counter]
-        tickers << company.stock_ticker
-      end
 
       if tickers[counter] == 'TBA'
+        company = Company.find_by(name: company_names[counter])
         ipo_profile = company.ipo_profile
         ipo_profile.file_date = Date.parse(file_dates[counter])
         ipo_profile.managers = managers[counter]
@@ -258,20 +259,51 @@ namespace :web_scrape do
         ipo_profile.estimated_volume = estimated_volume[counter][1..-1].to_f
         ipo_profile.status = status[counter].strip
         ipos << ipo_profile
+      else
+        stock_ticker = StockTicker.find_by(ticker: tickers[counter])
+        ipo_profile = stock_ticker.ipo_profile
+        ipo_profile.file_date = Date.parse(file_dates[counter])
+        ipo_profile.managers = managers[counter]
+        ipo_profile.shares = shares[counter]
+        ipo_profile.price_low = price_low[counter][1..-1].to_f
+        ipo_profile.price_high = price_high[counter][1..-1].to_f
+        ipo_profile.estimated_volume = estimated_volume[counter][1..-1].to_f
+        ipo_profile.status = status[counter].strip
+        ipos << ipo_profile
       end
-
-      ipo_profile = stock_ticker.ipo_profile
-      ipo_profile.file_date = Date.parse(file_dates[counter])
-      ipo_profile.managers = managers[counter]
-      ipo_profile.shares = shares[counter]
-      ipo_profile.price_low = price_low[counter][1..-1].to_f
-      ipo_profile.price_high = price_high[counter][1..-1].to_f
-      ipo_profile.estimated_volume = estimated_volume[counter][1..-1].to_f
-      ipo_profile.status = status[counter].strip
-      ipos << ipo_profile
     end
+  rescue OpenURI::HTTPError => e
+    logger = Rails.logger
+    logger.error("https://www.iposcoop.com/ipos-recently-filed/ was an unable to be scraped #{e.message}")
+  end
     ipos.uniq!
-    IpoProfile.import ipos, on_duplicate_key_update: {conflict_target: [:id], columns: [:file_date, :symbol, :managers, :shares, :price_low, :price_high, :estimated_volume, :status]}
-    StockTicker.import tickers, on_duplicate_key_update: [:ticker]
+    IpoProfile.import ipos, on_duplicate_key_update: [:file_date, :managers, :shares, :price_low, :price_high, :estimated_volume, :status]
+  end
+end
+
+namespace :web_scrape do
+  task update_stock_tickers: :environment do
+  begin
+    stock_tickers = []
+    html = URI.open("https://www.iposcoop.com/ipos-recently-filed/")
+    doc = Nokogiri::HTML(html)
+
+    company_names = doc.css('td:nth-child(2)').map(&:text)
+    tickers = doc.css('td:nth-child(3)').map(&:text)
+
+    doc.css('td:nth-child(2)').size.times do |counter|
+      next if ['IMNM', 'LUNG'].include? tickers[counter]
+      company = Company.find_by(name: company_names[counter])
+      stock_ticker = company.stock_ticker
+      if stock_ticker.ticker == 'TBA' && (stock_ticker.ticker != tickers[counter])
+        stock_ticker.ticker = tickers[counter]
+        tickers << stock_ticker
+      end
+    end
+  rescue OpenURI::HTTPError => e
+    logger = Rails.logger
+    logger.error("https://www.iposcoop.com/ipos-recently-filed/ was an unable to be scraped #{e.message}")
+  end
+    StockTicker.import stock_tickers, on_duplicate_key_update: [:ticker]
   end
 end
