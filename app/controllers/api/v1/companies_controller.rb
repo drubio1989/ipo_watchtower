@@ -5,6 +5,7 @@ module Api::V1
       options = {}
       options[:fields] = company_fields
       @companies = Company.name_starts_with_letter(filter_params)
+      fresh_when @companies
       serialize(@companies, options)
     end
 
@@ -15,6 +16,7 @@ module Api::V1
       ticker = StockTicker.find_by(ticker: params[:ticker])
       raise ActiveRecord::RecordNotFound.new "No company found for ticker #{params[:ticker]}" if ticker.nil?
       @company = ticker.company
+      fresh_when @company
       serialize(@company, options)
     end
 

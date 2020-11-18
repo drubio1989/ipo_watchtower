@@ -65,13 +65,15 @@ module Api::V1
     end
 
     def fetch_stock_ticker
-      ticker = StockTicker.find_by(ticker: params[:ticker])
+      ticker = StockTicker.includes(:ipo_profile).find_by(ticker: params[:ticker])
       raise ActiveRecord::RecordNotFound.new "No ipo found for ticker #{params[:ticker]}" if ticker.nil?
       @ipo = ticker.ipo_profile
+      fresh_when @ipo
     end
 
     def fetch_ipos
-      @ipos = IpoProfile.includes(:company)
+      @ipos = IpoProfile.includes(company: :stock_ticker)
+      fresh_when @ipos
     end
 
     def serialize(objects, sparse_fields = {})
