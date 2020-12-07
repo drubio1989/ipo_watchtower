@@ -81,4 +81,4 @@ test:
 production:
   adapter: postgresql
   encoding: unicode
-  url: JSON.parse(File.read('/tmp/ipo-watchtower-database.json'))
+  url: <%= ENV["POSTGRES_URL"] %>
