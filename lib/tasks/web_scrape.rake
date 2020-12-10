@@ -15,7 +15,7 @@ namespace :web_scrape do
       end
     end
   rescue OpenURI::HTTPError, StandardError => e
-    logger = Logger.new("#{Rails.root}/log/scraping.log")
+    logger = Logger.new("#{Rails.root}/log/#{Date.today}-scraping.log")
     logger.info("Scrape took place on: #{Date.today}")
     logger.error("Populating attributes failed for #{company.name}. #{company.slug}" + ' ' + "#{e.message}")
   end
@@ -70,7 +70,7 @@ namespace :web_scrape do
       end
       companies << company
   rescue OpenURI::HTTPError, StandardError => e
-      logger = Logger.new("#{Rails.root}/log/scraping.log")
+      logger = Logger.new("#{Rails.root}/log/#{Date.today}-scraping.log")
       logger.info("Scrape took place on: #{Date.today}")
       logger.error("Populating attributes failed for #{company.name}. #{company.slug}" + ' ' + "#{e.message}")
     end
@@ -96,7 +96,7 @@ namespace :web_scrape do
       ipo_profile.exchange = doc.css('.odd:nth-child(17) .first+ td').text.strip
       ipos << ipo_profile
   rescue OpenURI::HTTPError, StandardError => e
-      logger = Logger.new("#{Rails.root}/log/scraping.log")
+      logger = Logger.new("#{Rails.root}/log/#{Date.today}-scraping.log")
       logger.info("Scrape took place on: #{Date.today}")
       logger.error("Populating attributes failed for #{company.name}. #{company.slug}" + ' ' + "#{e.message}")
     end
@@ -140,7 +140,7 @@ namespace :web_scrape do
       stock_tickers << stock_ticker
     end
   rescue OpenURI::HTTPError => e
-    logger = Logger.new("#{Rails.root}/log/scraping.log")
+    logger = Logger.new("#{Rails.root}/log/#{Date.today}-scraping.log")
     logger.info("Scrape took place on: #{Date.today}")
     logger.error("https://www.iposcoop.com/last-12-months/ was an unable to be scraped #{e.message}")
   end
@@ -183,7 +183,7 @@ namespace :web_scrape do
       stock_tickers << stock_ticker
     end
   rescue OpenURI::HTTPError => e
-    logger = Logger.new("#{Rails.root}/log/scraping.log")
+    logger = Logger.new("#{Rails.root}/log/#{Date.today}-scraping.log")
     logger.info("Scrape took place on: #{Date.today}")
     logger.error("https://www.iposcoop.com/ipos-recently-filed/ was an unable to be scraped #{e.message}")
   end
@@ -224,7 +224,7 @@ namespace :web_scrape do
       ipos << ipo_profile
     end
   rescue OpenURI::HTTPError => e
-    logger = Logger.new("#{Rails.root}/log/scraping.log")
+    logger = Logger.new("#{Rails.root}/log/#{Date.today}-scraping.log")
     logger.info("Scrape took place on: #{Date.today}")
     logger.error("https://www.iposcoop.com/last-12-months/ was an unable to be scraped #{e.message}")
   end
@@ -258,7 +258,6 @@ namespace :web_scrape do
       else
         stock_ticker = StockTicker.find_by(ticker: tickers[counter])
         ipo_profile = stock_ticker.ipo_profile
-        byebug if ipo_profile.nil?
         ipo_profile.file_date = Date.parse(file_dates[counter])
         ipo_profile.managers = managers[counter]
         ipo_profile.shares = shares[counter]
@@ -270,7 +269,7 @@ namespace :web_scrape do
       end
     end
   rescue OpenURI::HTTPError => e
-    logger = Logger.new("#{Rails.root}/log/scraping.log")
+    logger = Logger.new("#{Rails.root}/log/#{Date.today}-scraping.log")
     logger.info("Scrape took place on: #{Date.today}")
     logger.error("https://www.iposcoop.com/ipos-recently-filed/ was an unable to be scraped #{e.message}")
   end
