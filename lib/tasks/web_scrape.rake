@@ -253,21 +253,12 @@ namespace :web_scrape do
       next unless StockTicker.exists?(ticker: tickers[counter])
       status[counter] = '' if [status[counter]].include? %w[Monday Tuesday Wednesday Thursday Friday Saturday Sunday]
 
-
       if tickers[counter] == 'TBA'
-        company = Company.find_by(name: company_names[counter])
-        ipo_profile = company.ipo_profile
-        ipo_profile.file_date = Date.parse(file_dates[counter])
-        ipo_profile.managers = managers[counter]
-        ipo_profile.shares = shares[counter]
-        ipo_profile.price_low = price_low[counter][1..-1].to_f
-        ipo_profile.price_high = price_high[counter][1..-1].to_f
-        ipo_profile.estimated_volume = estimated_volume[counter][1..-1].to_f
-        ipo_profile.status = status[counter].strip
-        ipos << ipo_profile
+        next
       else
         stock_ticker = StockTicker.find_by(ticker: tickers[counter])
         ipo_profile = stock_ticker.ipo_profile
+        byebug if ipo_profile.nil?
         ipo_profile.file_date = Date.parse(file_dates[counter])
         ipo_profile.managers = managers[counter]
         ipo_profile.shares = shares[counter]
@@ -285,33 +276,5 @@ namespace :web_scrape do
   end
     ipos.uniq!
     IpoProfile.import ipos, on_duplicate_key_update: [:file_date, :managers, :shares, :price_low, :price_high, :estimated_volume, :status]
-  end
-end
-
-namespace :web_scrape do
-  task update_stock_tickers: :environment do
-  begin
-    stock_tickers = []
-    html = URI.open("https://www.iposcoop.com/ipos-recently-filed/")
-    doc = Nokogiri::HTML(html)
-
-    company_names = doc.css('td:nth-child(2)').map(&:text)
-    tickers = doc.css('td:nth-child(3)').map(&:text)
-
-    doc.css('td:nth-child(2)').size.times do |counter|
-      next if ['IMNM', 'LUNG'].include? tickers[counter]
-      company = Company.find_by(name: company_names[counter])
-      stock_ticker = company.stock_ticker
-      if stock_ticker.ticker == 'TBA' && (stock_ticker.ticker != tickers[counter])
-        stock_ticker.ticker = tickers[counter]
-        tickers << stock_ticker
-      end
-    end
-  rescue OpenURI::HTTPError => e
-    logger = Logger.new("#{Rails.root}/log/scraping.log")
-    logger.info("Scrape took place on: #{Date.today}")
-    logger.error("https://www.iposcoop.com/ipos-recently-filed/ was an unable to be scraped #{e.message}")
-  end
-    StockTicker.import stock_tickers, on_duplicate_key_update: [:ticker]
   end
 end
