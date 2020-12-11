@@ -81,4 +81,4 @@ test:
 production:
   adapter: postgresql
   encoding: unicode
-  url: <%= ENV["POSTGRES_URL"] %>
+  url: <%= Rails.application.credentials.production[:database_url] %>
