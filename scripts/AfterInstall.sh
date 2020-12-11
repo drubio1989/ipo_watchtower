@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 cd /home/ubuntu
-RAILS_ENV=production bundle install --path vendor/bundle
+source /etc/profile.d/rvm.sh
+rvm use 2.7.2
+bundle install --path vendor/bundle
 RAILS_ENV=production bundle exec rails db:migrate
