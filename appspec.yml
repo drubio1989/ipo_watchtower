@@ -9,7 +9,7 @@ version: 0.0
 os: linux
 files:
   - source:  /
-    destination: /home/ubuntu
+    destination: /home/ubuntu/ipo_watchtower
 permissions:
   - object: /home/ubuntu
     owner: ubuntu
