@@ -12,6 +12,7 @@ every 1.day, at: '9:15 am' do
   rake "web_scrape:create_models_two"
   rake "web_scrape:update_models"
   rake "web_scrape:update_models_two"
+  rake "web_scrape:daily_update"
 end
 
 every 1.day, at: '5:15 pm' do
@@ -19,6 +20,7 @@ every 1.day, at: '5:15 pm' do
   rake "web_scrape:create_models_two"
   rake "web_scrape:update_models"
   rake "web_scrape:update_models_two"
+  rake "web_scrape:daily_update"
 end
 
 # Learn more: http://github.com/javan/whenever

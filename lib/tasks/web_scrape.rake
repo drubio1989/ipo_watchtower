@@ -24,6 +24,75 @@ namespace :web_scrape do
 end
 
 namespace :web_scrape do
+  task :daily_update do
+    begin
+      companies = []
+      Company.where(description: nil).each do |company|
+        html = URI.open("https://www.iposcoop.com/ipo/#{company.slug}/")
+        doc = Nokogiri::HTML(html)
+
+        description = ''
+        doc.css('#main-content p').children.each do |info|
+          description += info.text
+        end
+        company.description = description
+
+        general_info = doc.css('tr:nth-child(5) .first+ td , .odd:nth-child(4) .first+ td , tr:nth-child(3) .first+ td').children.map(&:text)
+        company.industry = general_info[0]
+        company.employees = general_info[1].to_i
+        company.founded = general_info[2].to_i
+
+        contact_info= doc.css('.odd:nth-child(9) .first+ td , tr:nth-child(8) .first+ td , .odd:nth-child(7) .first+ td').children.map(&:text)
+        company.address = contact_info[0]
+        company.phone_number = contact_info[1]
+        company.web_address = doc.css('.odd:nth-child(9) a').text
+
+        financials = doc.css('.odd:nth-child(14) .first+ td , tr:nth-child(13) .first+ td , .odd:nth-child(12) .first+ td').children.map(&:text)
+
+        market_cap, revenue, net_income = financials[0], financials[1], financials[2]
+
+        if market_cap.nil?
+          company.market_cap = ''
+        else
+          company.market_cap = market_cap[1..(market_cap.index('m') - 1)].to_f
+        end
+
+        if revenue.nil?
+          company.revenue = ''
+        else
+          company.revenue = revenue[1..(revenue.index('m') - 1)].to_f
+        end
+
+        if net_income.nil?
+          company.net_income = ''
+        else
+          company.net_income = net_income[1..(net_income.index('m') - 1)].to_f
+        end
+        companies << company
+
+        ipos = []
+
+        expected_to_trade = doc.css('.odd:nth-child(23) .first+ td').children.first.text.strip.split('/').map(&:to_i)
+        expected_to_trade.empty? ? expected_to_trade = '' : expected_to_trade = Date.new(expected_to_trade[2], expected_to_trade[0], expected_to_trade[1])
+
+        ipo_profile = company.ipo_profile
+        ipo_profile.expected_to_trade = expected_to_trade
+        ipo_profile.co_managers = doc.css('tr:nth-child(22) .first+ td').text.strip
+        ipo_profile.exchange = doc.css('.odd:nth-child(17) .first+ td').text.strip
+        ipos << ipo_profile
+
+    rescue OpenURI::HTTPError, StandardError => e
+        logger = Logger.new("#{Rails.root}/log/#{Date.today}-scraping.log")
+        logger.info("Scrape took place on: #{Date.today}")
+        logger.error("Populating attributes failed for #{company.name}. #{company.slug}" + ' ' + "#{e.message}")
+      end
+      Company.import companies, on_duplicate_key_update: [:industry, :employees, :founded, :address, :phone_number, :market_cap, :revenue, :net_income, :description]
+      IpoProfile.import ipos, on_duplicate_key_update: [:exchange, :expected_to_trade, :co_managers]
+    end
+  end
+end
+
+namespace :web_scrape do
   task update_company_attributes: :environment do
   begin
     companies = []
