@@ -24,8 +24,9 @@ namespace :web_scrape do
 end
 
 namespace :web_scrape do
-  task :daily_update do
+  task daily_update: :environment do
     begin
+      ipos = []
       companies = []
       Company.where(description: nil).each do |company|
         html = URI.open("https://www.iposcoop.com/ipo/#{company.slug}/")
@@ -70,8 +71,6 @@ namespace :web_scrape do
         end
         companies << company
 
-        ipos = []
-
         expected_to_trade = doc.css('.odd:nth-child(23) .first+ td').children.first.text.strip.split('/').map(&:to_i)
         expected_to_trade.empty? ? expected_to_trade = '' : expected_to_trade = Date.new(expected_to_trade[2], expected_to_trade[0], expected_to_trade[1])
 
@@ -86,6 +85,7 @@ namespace :web_scrape do
         logger.info("Scrape took place on: #{Date.today}")
         logger.error("Populating attributes failed for #{company.name}. #{company.slug}" + ' ' + "#{e.message}")
       end
+
       Company.import companies, on_duplicate_key_update: [:industry, :employees, :founded, :address, :phone_number, :market_cap, :revenue, :net_income, :description]
       IpoProfile.import ipos, on_duplicate_key_update: [:exchange, :expected_to_trade, :co_managers]
     end
