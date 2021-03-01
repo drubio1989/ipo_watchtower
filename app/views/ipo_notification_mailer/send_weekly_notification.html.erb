@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta content='text/html; charset=UTF-8' http-equiv='Content-Type' />
+  </head>
+  <body>
+    <h1>The following ipos are scheduled for this week:</h1>
+    <br>
+    <table>
+      <tr>
+        <th>Company</th>
+        <th>Symbol</th>
+        <th>Managers</th>
+        <th>Shares (Millions)</th>
+        <th>Price Low</th>
+        <th>Price High</th>
+        <th>Estimated Volume</th>
+        <th>Expected to Trade</th>
+      </tr>
+      <% @ipos.each do |ipo| %>
+      <tr>
+        <td><%= ipo.company.name %></td>
+        <td><%= ipo.company.stock_ticker.ticker %></td>
+        <td><%= ipo.managers %></td>
+        <td><%= ipo.shares %></td>
+        <td><%= ipo.price_low %></td>
+        <td><%= ipo.price_high %></td>
+        <td><%= ipo.estimated_volume %></td>
+        <td><%= ipo.expected_to_trade.strftime('%D') %></td>
+      </tr>
+      <% end %>
+    </table>
+
+
+    <p>Happy Investing!</p>
+  </body>
+</html>
