@@ -182,30 +182,21 @@ namespace :web_scrape do
     html = URI.open("https://www.iposcoop.com/last-12-months/")
     doc = Nokogiri::HTML(html)
 
-    company_names = doc.css('td:nth-child(1)').map(&:text)
     tickers = doc.css('td:nth-child(2)').map(&:text)
-    industries = doc.css('td:nth-child(3)').map(&:text)
-    offer_dates = doc.css('td:nth-child(4)').map(&:text)
+    company_names = doc.css('td:nth-child(1)').map(&:text)
     shares = doc.css('td:nth-child(5)').map(&:text)
-    offer_prices = doc.css('td:nth-child(6)').map(&:text)
-    first_day_close_prices = doc.css('td:nth-child(7)').map(&:text)
-    current_prices = doc.css('td:nth-child(8)').map(&:text)
-    rate_of_returns = doc.css('td:nth-child(9)').map(&:text)
 
     doc.css('td:nth-child(1)').size.times do |counter|
-      next if StockTicker.exists?(ticker: tickers[counter])
-      offer_date = offer_dates[counter].split('/').map(&:to_i)
-      stock_ticker = StockTicker.new(ticker: tickers[counter])
-      company = stock_ticker.build_company(name: company_names[counter])
-      company.build_ipo_profile(
-        industry: industries[counter],
-        offer_date: Date.new(offer_date[2], offer_date[0], offer_date[1]),
-        shares: shares[counter],
-        offer_price: offer_prices[counter][1..-1].to_f,
-        first_day_close_price: first_day_close_prices[counter][1..-1].to_f,
-        current_price: current_prices[counter][1..-1].to_f,
-        rate_of_return: rate_of_returns[counter][0..-2].to_f
-      )
+      stock_ticker = StockTicker.find_by(ticker: tickers[counter])
+      if stock_ticker.nil?
+        stock_ticker = StockTicker.new(ticker: tickers[counter])
+        company = stock_ticker.build_company(name: company_names[counter])
+        company.build_ipo_profile(shares: shares[counter])
+      elsif stock_ticket.company.nil?
+        company = stock_ticker.build_company(name: company_names[counter])
+        company.build_ipo_profile(shares: shares[counter])
+      end
+    
       stock_tickers << stock_ticker
     end
   rescue OpenURI::HTTPError => e
