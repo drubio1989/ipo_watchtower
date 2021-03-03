@@ -1,24 +1,7 @@
 # README
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+This project is an email notification service based off of iposcoop.com. The purpose of this project was to act as a point of entry for a frontend client to get data off of ipos. Additionally, this was used to send email notifications. Now archived.
 
-Things you may want to cover:
+Notable tech used:
 
-* Ruby version
-
-* System dependencies
-
-* Configuration
-
-* Database creation
-
-* Database initialization
-
-* How to run the test suite
-
-* Services (job queues, cache servers, search engines, etc.)
-
-* Deployment instructions
-
-* ...
+Rails API mode, AWS SES, EC2, CloudWatch, web scraping.
