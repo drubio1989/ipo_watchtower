@@ -24,7 +24,7 @@ gem 'bootsnap', '>= 1.4.2', require: false
 gem 'rack-attack'
 gem 'nio4r', '2.5.3'
 # Use Rack CORS for handling Cross-Origin Resource Sharing (CORS), making cross-origin AJAX possible
-# gem 'rack-cors'
+gem 'rack-cors'
 gem 'jsonapi-serializer'
 gem 'jsonapi.rb'
 gem 'friendly_id', '~> 5.4.0'
