@@ -3,9 +3,10 @@ class ApplicationController < ActionController::API
   include ActionController::HttpAuthentication::Token::ControllerMethods
   rescue_from ActiveRecord::RecordNotFound, with: :not_found
 
-  before_action :authenticate_request
-  before_action :validate_accept_header
-  before_action :set_headers
+  # Disable for right now
+  # before_action :authenticate_request
+  # before_action :validate_accept_header
+  # before_action :set_headers
 
   private
 

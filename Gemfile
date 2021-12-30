@@ -1,7 +1,7 @@
 source 'https://rubygems.org'
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
-ruby '2.7.2'
+ruby '3.0.3'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '~> 6.0.3', '>= 6.0.3.3'
@@ -43,6 +43,7 @@ group :test do
   gem 'rails-controller-testing'
   gem 'shoulda-matchers', '~> 4.0'
   gem 'simplecov', require: false
+  gem 'rspec-openapi'
 end
 
 group :development do

@@ -1,0 +1,30 @@
+version: "3.8"
+
+services:
+  api:
+    build: .
+    image: rails-docker
+    restart: "no"
+    environment:
+      - DBHOST=postgresql
+      - DBUSER=postgres
+      - DBPASS=password
+    ports:
+      - 3000:3000
+    depends_on:
+      - postgresql
+
+  postgresql:
+    image: postgres:13.2-alpine
+    restart: "no"
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_DB: ipo_watchtower_dev
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgresdb:/var/lib/postgresql/data/
+
+volumes:
+  postgresdb:
