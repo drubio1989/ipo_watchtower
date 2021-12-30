@@ -192,7 +192,7 @@ namespace :web_scrape do
         stock_ticker = StockTicker.new(ticker: tickers[counter])
         company = stock_ticker.build_company(name: company_names[counter])
         company.build_ipo_profile(shares: shares[counter])
-      elsif stock_ticket.company.nil?
+      elsif stock_ticker.company.nil?
         company = stock_ticker.build_company(name: company_names[counter])
         company.build_ipo_profile(shares: shares[counter])
       end
