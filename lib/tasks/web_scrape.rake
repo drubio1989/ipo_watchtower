@@ -19,7 +19,7 @@ namespace :web_scrape do
     logger.info("Scrape took place on: #{Date.today}")
     logger.error("Populating attributes failed for #{company.name}. #{company.slug}" + ' ' + "#{e.message}")
   end
-    Company.import companies, on_duplicate_key_update: true
+    Company.import! companies, on_duplicate_key_update: [:name]
   end
 end
 
@@ -311,22 +311,16 @@ namespace :web_scrape do
 
     doc.css('td:nth-child(2)').size.times do |counter|
       next unless StockTicker.exists?(ticker: tickers[counter])
-      status[counter] = '' if [status[counter]].include? %w[Monday Tuesday Wednesday Thursday Friday Saturday Sunday]
-
-      if tickers[counter] == 'TBA'
-        next
-      else
-        stock_ticker = StockTicker.find_by(ticker: tickers[counter])
-        ipo_profile = stock_ticker.ipo_profile
-        ipo_profile.file_date = Date.parse(file_dates[counter])
-        ipo_profile.managers = managers[counter]
-        ipo_profile.shares = shares[counter]
-        ipo_profile.price_low = price_low[counter][1..-1].to_f
-        ipo_profile.price_high = price_high[counter][1..-1].to_f
-        ipo_profile.estimated_volume = estimated_volume[counter][1..-1].to_f
-        ipo_profile.status = status[counter].strip
-        ipos << ipo_profile
-      end
+      stock_ticker = StockTicker.find_by(ticker: tickers[counter])
+      ipo_profile = stock_ticker.ipo_profile
+      ipo_profile.file_date = Date.parse(file_dates[counter])
+      ipo_profile.managers = managers[counter]
+      ipo_profile.shares = shares[counter]
+      ipo_profile.price_low = price_low[counter][1..-1].to_f
+      ipo_profile.price_high = price_high[counter][1..-1].to_f
+      ipo_profile.estimated_volume = estimated_volume[counter][1..-1].to_f
+      ipo_profile.status = status[counter].strip
+      ipos << ipo_profile
     end
   rescue OpenURI::HTTPError => e
     logger = Logger.new("#{Rails.root}/log/#{Date.today}-scraping.log")

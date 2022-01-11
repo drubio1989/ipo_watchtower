@@ -1,6 +1,14 @@
 version: "3.8"
 
 services:
+  frontend:
+    image: node:16-alpine
+    restart: "no"
+    ports:
+      - 3001:3001
+    command: "npm start -p 3001"
+    depends_on:
+      - api
   api:
     build: .
     image: rails-docker
@@ -13,7 +21,6 @@ services:
       - 3000:3000
     depends_on:
       - postgresql
-
   postgresql:
     image: postgres:13.2-alpine
     restart: "no"
